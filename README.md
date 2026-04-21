@@ -1,22 +1,22 @@
 # Folder structure:
 ```
-Day 2/
-├── Track 1/
-│   ├── Agentic AI for EO and its integration with FMs Oral Session
-│   └── Building Agentic Earth Intelligence: A Hands-On Tour of the EVE Platform and Tool Ecosystem
-├── Track 2/
-│   ├── Building Agentic Earth Intelligence: A Hands-On Tour of the EVE Platform and Tool Ecosystem
-│   └── Earth Embeddings for EO: Retrieval, Discovery, and Change-Oriented Search
-└── Track 3/
-    └── Operational Geospatial AI: Fine‑Tuning, Inference, and Scalable EO Model Serving
+[Day 2/](Day%202/)
+├── [Track 1/](Day%202/Track%201/)
+│   ├── [Agentic-AI-EO-FMs/](Day%202/Track%201/Agentic-AI-EO-FMs/)
+│   └── [EVE-Platform-Tour/](Day%202/Track%201/EVE-Platform-Tour/)
+├── [Track 2/](Day%202/Track%202/)
+│   ├── [EVE-Platform-Tour/](Day%202/Track%202/EVE-Platform-Tour/)
+│   └── [Earth-Embeddings-EO/](Day%202/Track%202/Earth-Embeddings-EO/)
+└── [Track 3/](Day%202/Track%203/)
+    └── [Operational-GeoAI-Model-Serving/](Day%202/Track%203/Operational-GeoAI-Model-Serving/)
 
-Day 4/
-├── Track 1/
-│   └── Building a GeoAI Agent: A Hands-On Tutorial on Agentic Foundation Models for Earth Observation
-├── Track 2/
-│   └── Building Scalable AI EO Workflows: TerraTorch Embedding Workflows & TerraTorch Iterate for Zero-Invasive HPO and NAS
-└── Track 3/
-    └── Quantitative Evaluation and Science-Driven Use of Weather Foundation Models
+[Day 4/](Day%204/)
+├── [Track 1/](Day%204/Track%201/)
+│   └── [GeoAI-Agent-Tutorial/](Day%204/Track%201/GeoAI-Agent-Tutorial/)
+├── [Track 2/](Day%204/Track%202/)
+│   └── [TerraTorch-Workflows/](Day%204/Track%202/TerraTorch-Workflows/)
+└── [Track 3/](Day%204/Track%203/)
+    └── [Weather-Foundation-Models/](Day%204/Track%203/Weather-Foundation-Models/)
 ```
 
 # Conventions
