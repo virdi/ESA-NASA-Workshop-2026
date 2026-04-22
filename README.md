@@ -5,7 +5,7 @@
     - [Agentic-AI-EO-FMs](Day%202/Track%201/Agentic-AI-EO-FMs/)
     - [EVE-Platform-Tour](Day%202/Track%201/EVE-Platform-Tour/)
   - [Track 2](Day%202/Track%202/)
-    - [EVE-Platform-Tour](Day%202/Track%202/EVE-Platform-Tour/)
+    - [Operational-Needs-To-FM-Design](Day%202/Track%202/Operational-Needs-To-FM-Design/)
     - [Earth-Embeddings-EO](Day%202/Track%202/Earth-Embeddings-EO/)
   - [Track 3](Day%202/Track%203/)
     - [Operational-GeoAI-Model-Serving](Day%202/Track%203/Operational-GeoAI-Model-Serving/)
@@ -32,7 +32,7 @@
 - Schedule a dry run with another team or ODSI representatives to ensure everything is fully set up and functioning as expected.
 
 # Getting started
-1. Navigate to [Login URL](https://enw.workshop.odsi.io)
+1. Navigate to [Login URL](https://enw.workshops.odsi.io)
 2. Log in using the credential provided
 3. Once the Studio starts, Click on JupyterLab
 4. Click `Create JupyterLab Space`
