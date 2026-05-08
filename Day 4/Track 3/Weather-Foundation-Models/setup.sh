@@ -35,7 +35,7 @@ source "${VENV_DIR}/bin/activate"
 # 3. Install the full stack from requirements.txt.
 #    flash_attn and timm need --no-build-isolation; uv's requirements.txt
 #    parser doesn't accept that per-line, so we set it via env var here.
-export UV_NO_BUILD_ISOLATION_PACKAGE="flash-attn timm"
+export UV_NO_BUILD_ISOLATION_PACKAGE="flash-attn timm nvidia-pyindex"
 uv pip install -r "${REQUIREMENTS_FILE}"
 
 # 4. Register a Jupyter kernel that points at this venv
