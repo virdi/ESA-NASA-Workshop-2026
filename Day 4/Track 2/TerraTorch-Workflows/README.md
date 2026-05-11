@@ -30,16 +30,16 @@ This hands-on session introduces EO embedding workflows, downstream adaptation, 
 | 0 | Introduction and workshop overview                       | Slides | 10 min |
 |  | **Part 1: EO Foundation Models and Embedding Workflows** |  |        |
 | 1 | EO foundation models, embeddings, and TerraTorch basics  | Slides + setup | 15 min |
-| 2 | Embedding generation and inspection with TerraTorch      | Notebook follow-along | 25 min |
+| 2 | Embedding generation and inspection with TerraTorch      | Notebook follow-along | 30 min |
 |  | Buffer, troubleshooting, and break                       | Break | 15 min |
 |  | **Part 2: Downstream Tasks with EO Embeddings**          |  |        |
 | 3 | Downstream adaptation with EO embeddings                 | Slides | 10 min |
-| 4 | Decoder training on precomputed embeddings               | Notebook follow-along | 25 min |
+| 4 | Decoder training on precomputed embeddings               | Notebook follow-along | 20 min |
 |  | **Part 3: Real-World EO Use Case**                       |  |        |
-| 5 | Forest disturbance monitoring workflow                   | Intro + notebook demo | 50 min |
+| 5 | Forest disturbance monitoring workflow                   | Intro + notebook demo | 60 min |
 |  | Buffer, troubleshooting, and break                       | Break | 15 min |
 |  | **Part 4: Scalable Experimentation with Iterate**        |  |        |
-| 6 | TerraTorch Iterate and workflow configuration            | Slides | 20 min |
+| 6 | TerraTorch Iterate and workflow configuration            | Slides | 10 min |
 | 7 | Distributed HPO/NAS and experiment tracking              | Notebook follow-along | 40 min |
 | 8 | Closing discussion and Q&A                               | Discussion | 15 min |
 
