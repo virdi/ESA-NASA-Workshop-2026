@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "terratorch-flip-processor"
+version = "0.1.0"
+description = "A simple flip augmentation IOProcessor for TerraTorch segmentation models - Educational Example"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "TerraTorch Contributors"}
+]
+keywords = ["terratorch", "vllm", "io-processor", "segmentation", "geospatial", "satellite-imagery"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+dependencies = [
+    "terratorch>=1.0.0",
+    "vllm>=0.14.0",
+    "numpy>=1.20.0",
+    "torch>=2.0.0",
+    "rasterio>=1.3.0",
+    "pydantic>=2.0.0",
+    "einops>=0.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "matplotlib>=3.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/IBM/terratorch"
+Documentation = "https://github.com/IBM/terratorch"
+Repository = "https://github.com/IBM/terratorch"
+Issues = "https://github.com/IBM/terratorch/issues"
+
+[project.entry-points."vllm.io_processor_plugins"]
+flip_augmentation = "terratorch_flip_processor:register_flip_processor"
+
+[tool.setuptools]
+packages = ["terratorch_flip_processor"]
+
+[tool.setuptools.package-data]
+terratorch_flip_processor = ["py.typed"]

@@ -1,0 +1,3 @@
+include README.md
+include LICENSE
+recursive-include terratorch_flip_processor *.py
