@@ -5,7 +5,10 @@
 # --- Build prerequisites (needed by flash_attn / timm with --no-build-isolation) ---
 packaging
 ninja
-torch
+# Pin torch to a range that has precompiled flash-attn 2.7.4.post1 wheels
+# (flash-attn ships wheels for torch 2.2–2.7; newer torch forces a source
+# build that needs the CUDA toolkit, which SageMaker JupyterLab lacks).
+torch>=2.6,<2.8
 
 # --- Anemoi stack ---
 anemoi-inference[huggingface]==0.4.3
