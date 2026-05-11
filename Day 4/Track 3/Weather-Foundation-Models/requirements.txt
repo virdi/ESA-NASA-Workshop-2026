@@ -10,6 +10,10 @@ ninja
 # build that needs the CUDA toolkit, which SageMaker JupyterLab lacks).
 torch>=2.6,<2.8
 
+# --- AWS ---
+boto3
+s3fs
+
 # --- Anemoi stack ---
 anemoi-inference[huggingface]==0.4.3
 anemoi-models==0.2.1
