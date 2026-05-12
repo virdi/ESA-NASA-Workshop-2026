@@ -512,15 +512,16 @@ def plot_level(
 
     # Add custom entry for synoptic CI (95%)
     control_color_idx = available_exps.index(0)
+    control_model = models[0].split("_")[1]
     synoptic_ci_line = Line2D(
         [0], [0],
         color=colors[control_color_idx],
         linestyle="--",
         linewidth=1.0,
-        label=f"95% Synoptic CI ({models[0].split("_")[1]})"
+        label=f"95% Synoptic CI ({control_model})"
     )
     handles.append(synoptic_ci_line)
-    leg_labels.append(f"95% Synoptic CI ({models[0].split("_")[1]})")
+    leg_labels.append(f"95% Synoptic CI ({control_model})")
 
     legend = axl.legend(
         handles,
