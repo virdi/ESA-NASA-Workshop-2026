@@ -56,6 +56,7 @@ cd ..
 vllm serve 1_run_model_in_vllm \
    --skip-tokenizer-init \
    --enable-mm-embeds \
+   --max-num-seqs 32 \
    --io-processor-plugin terratorch_segmentation \
    --enforce-eager
 ```
