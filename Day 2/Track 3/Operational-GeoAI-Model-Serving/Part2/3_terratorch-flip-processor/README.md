@@ -13,7 +13,7 @@ A small custom IOProcessor for TerraTorch segmentation models served by vLLM. It
 From this directory:
 
 ```bash
-cd 2_terratorch-flip-processor
+cd 3_terratorch-flip-processor
 uv pip install -e .
 ```
 

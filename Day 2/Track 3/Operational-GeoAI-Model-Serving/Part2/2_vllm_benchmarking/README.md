@@ -1,4 +1,4 @@
-# Step 3: Benchmarking the vLLM Server
+# Step 2: Benchmarking the vLLM Server
 
 The model is loaded and the IOProcessor is wired up. So how does the server actually hold up under load? Two tools for measuring throughput and latency:
 
@@ -8,7 +8,7 @@ The model is loaded and the IOProcessor is wired up. So how does the server actu
 Both drive the running vLLM server with the datasets shipped in this directory (`dataset_url_input_india.jsonl` and its repeated counterpart for guidellm). They hit the same `/pooling` endpoint exposed by the Prithvi model, but they answer different questions.
 
 ```bash
-cd 3_vllm_benchmarking
+cd 2_vllm_benchmarking
 ```
 ## `vllm bench`
 
