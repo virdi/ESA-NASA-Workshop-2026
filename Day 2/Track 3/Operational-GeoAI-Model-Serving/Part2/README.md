@@ -24,7 +24,7 @@ Now that there's a server, push some load at it. Two tools, two different questi
 
 The point is to learn the difference between a spot-check benchmark and a capacity curve, and how to read the latency knee that marks server saturation.
 
-### [Step 3: Custom IOProcessor](./3_terratorch-flip-processor/README.md)
+### [Step 3: (Bonus) Custom IOProcessor](./3_terratorch-flip-processor/README.md)
 
 vLLM speaks tensors-in / tensors-out. Real geospatial users send GeoTIFFs and expect GeoTIFFs back. The IOProcessor is the adapter that sits between the two. This step walks through a small custom processor that flips the input and lets the output come back flipped, so you can visually confirm the plugin ran:
 - How a custom IOProcessor is structured
