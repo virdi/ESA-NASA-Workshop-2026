@@ -4,12 +4,12 @@ vLLM doesn't load PyTorch Lightning checkpoints or TerraTorch YAML configs out o
 
 ## Step 0: Get the model checkpoint and config
 
-If you don't already have the Prithvi flood-segmentation checkpoint and its TerraTorch config on disk, grab them from the workshop bucket:
+If you don't already have the Prithvi flood-segmentation checkpoint and its TerraTorch config on disk, grab them from the pre-created HuggingFace model repository:
 
 ```bash
 cd 1_run_model_in_vllm
-curl -o state_dict.ckpt https://geospatial-studio-example-data.s3.us-east.cloud-object-storage.appdomain.cloud/prithvi-eo-flood/prithvi-eo-flood-bestEpoch_Fixed_updated.ckpt
-curl -o config_deploy.yaml https://geospatial-studio-example-data.s3.us-east.cloud-object-storage.appdomain.cloud/prithvi-eo-flood/prithvi-eo-flood-config.yaml
+hf download mgazz/prithvi-eo-flood --local-dir config_deploy.yaml
+hf download mgazz/prithvi-eo-flood --local-dir state_dict.ckpt
 ```
 
 The rest of this README assumes both files (`state_dict.ckpt` and `config_deploy.yaml`) are in the current directory.
@@ -33,7 +33,7 @@ The result lands as `config.json` next to your input YAML.
 
 ## Step 2: Convert the checkpoint to a binary
 
-vLLM wants a plain PyTorch state dict in `.bin` form. Lightning checkpoints wrap the state dict in extra training scaffolding (optimizer state, criterion weights, and so on), so [`convert_ckpt_to_bin.py`](convert_ckpt_to_bin.py) unwraps it. It loads the Lightning checkpoint, pulls out the `state_dict`, drops training-only entries, and saves the result as a standard PyTorch binary.
+vLLM wants a plain PyTorch state dict in `.bin` form. Lightning checkpoints wrap the state dict in extra training scaffolding (optimizer state, criterion weights, and so on), so [`convert_ckpt_to_bin.py`](convert_ckpt_to_bin.py) pulls out the `state_dict`, drops training-only entries, and saves the result as a standard PyTorch binary.
 
 ```bash
 
