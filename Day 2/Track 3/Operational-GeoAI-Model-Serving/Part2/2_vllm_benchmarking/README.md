@@ -28,7 +28,7 @@ vllm bench serve \
   --metric-percentiles 25,75,99 \
   --num-prompts 100 \
   --request-rate 10 \
-  --dataset-path ./dataset_url_input_india.jsonl
+  --dataset-path ./dataset_path_input_india.jsonl
 ```
 
 Key flags:
@@ -49,7 +49,7 @@ guidellm benchmark \
   --target http://localhost:8000 \
   --backend openai_http \
   --model 1_run_model_in_vllm \
-  --data dataset_url_input_india_guidellm.jsonl \
+  --data dataset_path_input_india_guidellm.jsonl \
   --request-format /pooling \
   --data-column-mapper pooling_column_mapper \
   --max-requests 100 \
@@ -62,7 +62,7 @@ A single `guidellm benchmark` invocation produces multiple runs by default:
 2. A **throughput** run (no rate cap) to find the server's ceiling.
 3. A series of **constant-rate** runs sweeping between those two bounds.
 
-Results land in `results.json` for offline analysis. The repeated dataset (`dataset_url_input_india_guidellm.jsonl`) is long enough that the harness can keep dispatching requests across every sweep stage without recycling input.
+Results land in `results.json` for offline analysis. The repeated dataset (`dataset_path_input_india_guidellm.jsonl`) is long enough that the harness can keep dispatching requests across every sweep stage without recycling input.
 
 ## Differences at a glance
 
