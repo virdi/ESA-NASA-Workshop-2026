@@ -63,6 +63,30 @@ warnings.filterwarnings(
 # ]
 c_cmap = plt.cm.RdYlBu_r(np.linspace(0, 1, 21))
 
+red_yel_blue = [
+    (0.00, 0.00, 0.55),  # 0  dark blue
+    (0.00, 0.10, 0.65),  # 1  
+    (0.00, 0.20, 0.75),  # 2  
+    (0.00, 0.35, 0.85),  # 3  
+    (0.00, 0.50, 0.95),  # 4  bright blue
+    (0.10, 0.60, 1.00),  # 5  
+    (0.20, 0.70, 1.00),  # 6  light blue
+    (0.30, 0.80, 1.00),  # 7  
+    (0.45, 0.85, 0.95),  # 8  cyan-blue
+    (0.60, 0.90, 0.85),  # 9  light cyan
+    (1.00, 1.00, 0.00),  # 10 pure yellow (center)
+    (1.00, 0.95, 0.00),  # 11 
+    (1.00, 0.85, 0.00),  # 12 golden yellow
+    (1.00, 0.75, 0.00),  # 13 
+    (1.00, 0.65, 0.00),  # 14 orange-yellow
+    (1.00, 0.50, 0.00),  # 15 orange
+    (1.00, 0.35, 0.00),  # 16 
+    (0.95, 0.20, 0.00),  # 17 red-orange
+    (0.85, 0.10, 0.00),  # 18 bright red
+    (0.75, 0.00, 0.00),  # 19 
+    (0.60, 0.00, 0.00),  # 20 dark red
+]
+
 # Plot colors for each model (in level plots)
 colors = [
     "black",  # black
@@ -212,51 +236,7 @@ def check_coastline_data():
         sys.exit(1)
 
 
-# ================== PLACEHOLDER HELPER FUNCTIONS ====================
-
-
-def round_down_max(arr, percentile=98):
-    """
-    Return the max absolute value rounded down to the nearest 10, with a
-    minimum threshold of 10 (smaller values use specific "nice" values).
-
-    Parameters:
-    -----------
-    arr : ndarray
-        Array of data values
-
-    Returns:
-    --------
-    float or int
-        Rounded maximum value appropriate for colorbar scales
-    """
-
-    with np.errstate(invalid="ignore"):
-        # max_abs = np.nanmax(np.abs(arr))
-        max_abs = np.nanpercentile(np.abs(arr), percentile)
-
-    # Define thresholds and their corresponding return values
-    # thresholds = [
-    #     (0.1, 0.1),
-    #     (0.5, 0.5),
-    #     (1, 1),
-    #     (2.5, 2.5),
-    #     (5, 5),
-    #     (10, 10),
-    # ]
-
-    # Check if max_abs falls within predefined thresholds
-    # for threshold, value in thresholds:
-    #     if 0 < max_abs <= threshold:
-    #         return value
-
-    if max_abs < 10 and max_abs > 0:
-        # return math.ceil(max_abs)
-        return 1.0
-    elif max_abs > 10:  # For values > 10, round down to nearest 10
-        return int(max_abs // 10 * 10)
-    else:
-        return 0
+# ================== HELPER FUNCTIONS ====================
 
 
 def nice_levels(data_min, data_max, n_levels, n_ticks, use_step=False):
@@ -644,42 +624,6 @@ def extract_number(filename):
     return int(match.group()) if match else -1
 
 
-def get_limits_from_diff(diff_data, percentile):
-    """Used for forecasts, gets percentile limits from diff."""
-    return round_down_max(diff_data, percentile=percentile)
-
-
-def get_limits_comp(
-    base, comp, index_str, use_mean=False, axis=-1, percentiles=None
-):
-    """
-    Get appropriate max limits for ACORR and RMS subplots using ALL lead times.
-    """
-
-    # Parse index string into slice tuple
-    dims = tuple(
-        slice(None) if part.strip() == ":" else int(part.strip())
-        for part in index_str.split(",")
-    )
-
-    # Prepend slice(None) for lead time dimension
-    dims_with_leads = (slice(None),) + dims
-
-    # Helper to extract difference and optionally average for a given stat index
-    def get_diff_data(idx):
-        # Apply dims_with_leads to include lead dimension
-        diff = base[:, idx][dims_with_leads] - comp[:, idx][dims_with_leads]
-        return np.nanmean(diff, axis=axis) if use_mean else diff
-
-    # Calculate rounded max values for ACORR and RMS
-    Amax, Rmax = (
-        round_down_max(get_diff_data(idx), percentile=percentiles[idx])
-        for idx in [1, 2]
-    )
-
-    return Amax, Rmax
-
-
 def plot_level_subplot(
     fig, ax, cax, i, title, zdata, cmap_key, mask, x, y,
     plot_data, colormaps, cmax=None, cmin=None,
@@ -695,6 +639,40 @@ def plot_level_subplot(
 
     # Extract max based on stat index
     vmax = [FCmax, Amax, Rmax][i]
+
+    # ============= DEBUGGING =============
+    stat_names = ['Forecast', 'ACC', 'RMSE']
+    print(f"\n            PLOT_SUBPLOT DEBUG for {stat_names[i]}:")
+    print(f"              zdata shape: {zdata.shape}")
+    print(f"              zdata NaN: {np.sum(np.isnan(zdata))}/{zdata.size} ({np.sum(np.isnan(zdata))/zdata.size*100:.1f}%)")
+    print(f"              ref_data type: {type(ref_data)}")
+    if isinstance(ref_data, np.ndarray):
+        print(f"              ref_data shape: {ref_data.shape}")
+        print(f"              ref_data NaN: {np.sum(np.isnan(ref_data))}/{ref_data.size}")
+    else:
+        print(f"              ref_data value: {ref_data}")
+    print(f"              vmax: {vmax}")
+    print(f"              cmap_key: {cmap_key}")
+    
+    # Check if ref_data has any valid values before checking max
+    if isinstance(ref_data, np.ndarray):
+        has_valid = not np.all(np.isnan(ref_data))
+    else:
+        has_valid = not np.isnan(ref_data)
+    
+    print(f"              has_valid: {has_valid}")
+    
+    if has_valid:
+        if isinstance(ref_data, np.ndarray):
+            max_abs_ref = np.nanmax(np.abs(ref_data))
+        else:
+            max_abs_ref = abs(ref_data)
+        print(f"              max_abs(ref_data): {max_abs_ref}")
+    # =====================================
+
+    # Check if ref_data has any valid values before checking max
+    if not np.all(np.isnan(ref_data)) and np.nanmax(abs(ref_data)) > 0:
+        fill = True
 
     if np.nanmax(abs(ref_data)) > 0:
         fill = True
@@ -728,7 +706,7 @@ def plot_level_subplot(
                 levels=[0.5, 1.5],
                 colors=['gray'],
                 alpha=0.5,
-                extend='neither'
+                extend='both'
             )
 
         # Get the colormap (don't set_bad since we're handling NaNs separately)
@@ -741,7 +719,7 @@ def plot_level_subplot(
             zdata,
             levels=bounds,
             cmap=cmap,
-            extend="neither",
+            extend="both",
         )
 
     # Add significance contours for comp mode
@@ -776,9 +754,124 @@ def plot_level_subplot(
     ax.set_title(title, fontsize=10)
     ax.set_global()
 
+def plot_level_subplot_v2(
+    fig, ax, cax, i, title, zdata, cmap_key, mask, x, y,
+    colormaps, is_difference, vmax
+):
+    """
+    Create and render a single subplot for level (map) plots.
+    
+    Handles both difference plots (centered at 0) and raw value plots (0 to max)
+    using the same colormap with different bounds.
+    
+    Parameters:
+    -----------
+    fig : matplotlib.figure.Figure
+        Figure object
+    ax : cartopy.mpl.geoaxes.GeoAxes
+        Map axes
+    cax : matplotlib.axes.Axes
+        Colorbar axes
+    i : int
+        Subplot index (0=forecast, 1=ACC, 2=RMSE)
+    title : str
+        Subplot title
+    zdata : ndarray
+        Data to plot (with cyclic point added)
+    cmap_key : str
+        Colormap key
+    mask : list or None
+        Significance masks (only used for difference plots)
+    x : ndarray
+        Longitude coordinates (with cyclic point)
+    y : ndarray
+        Latitude coordinates
+    colormaps : dict
+        Dictionary of colormaps
+    is_difference : bool
+        True for difference plots (centered at 0), False for raw values (0 to max)
+    vmax : float
+        Maximum value for colormap
+    """
+    
+    # Check if we have valid data to plot
+    has_valid = not np.all(np.isnan(zdata))
+    
+    if not has_valid:
+        # Create empty colorbar for all-NaN data
+        create_empty_colorbar(fig, cax)
+        ax.set_title(title, fontsize=10)
+        ax.set_global()
+        return
+    
+    # Check if all values are effectively zero
+    if np.nanmax(np.abs(zdata)) < 1e-10:
+        create_empty_colorbar(fig, cax)
+        ax.set_title(title, fontsize=10)
+        ax.set_global()
+        return
+    
+    # Set up colormap bounds based on whether this is a difference or raw value
+    if is_difference:
+        # Centered at 0 for differences: -vmax to +vmax
+        vmin = -vmax
+        offset = (vmax - vmin) / 20 / 2
+        n_levels = 22
+        bounds = np.linspace(vmin - offset, vmax + offset, n_levels)
+        ticks_vis = np.linspace(vmin, vmax, 21)
+    else:
+        # From 0 to vmax for raw values (ACC, RMSE)
+        vmin = 0
+        offset = vmax / 20 / 2
+        n_levels = 22
+        bounds = np.linspace(vmin - offset, vmax + offset, n_levels)
+        ticks_vis = np.linspace(vmin, vmax, 21)
+    
+    # Create NaN mask and plot gray background
+    nan_mask = np.isnan(zdata)
+    if np.any(nan_mask):
+        nan_display = np.where(nan_mask, 1.0, np.nan)
+        ax.pcolormesh(
+            x, y, nan_display,
+            cmap=mcolors.ListedColormap(['lightgray']),
+            vmin=0, vmax=2,
+            alpha=0.7,
+            shading='auto',
+            transform=ccrs.PlateCarree()
+        )
+    
+    # Get colormap
+    cmap = colormaps[cmap_key].copy()
+    
+    # Plot the data
+    cs = ax.contourf(
+        x, y, zdata,
+        levels=bounds,
+        cmap=cmap,
+        extend="both",
+    )
+    
+    # Add significance contours (only for difference plots with masks)
+    if mask is not None and is_difference:
+        for s, sig_mask in enumerate(mask):
+            ax.contour(
+                x, y, sig_mask.astype(int),
+                levels=[0.5],
+                colors="k",
+                linestyles='solid',
+                linewidths=0.2,
+                alpha=0.5,
+            )
+    
+    # Create colorbar
+    create_filled_colorbar(cs, fig, cax, bounds, abs(vmax), ticks_vis, is_contour=(i == 0))
+    
+    # Set title and map extent
+    ax.set_title(title, fontsize=10)
+    ax.set_global()
+
 
 def create_level_plots(
-    # mode,
     exps_to_comp,
     leads,
     v,
@@ -807,83 +900,28 @@ def create_level_plots(
     fcst_interval,
     levels_to_plot=None,
     lead_indices=None,
-    limit_percentiles=None,
+    stat_limits=None,
     colormap_key=None,
     gif_frame_duration=1000,
 ):
     """
     Create all level plots (horizontal maps) for a variable.
 
-    Level plots show horizontal maps at specific pressure levels (for 3D
-    variables) or at a nominal surface level (for 2D variables). Each lead
-    time gets plots for all levels, followed by animation per level.
+    Plots show:
+    - Column 1: Forecast difference (exp - base)
+    - Column 2: Raw ACC from exp
+    - Column 3: Raw RMSE from exp
 
     Parameters:
     -----------
-    exps_to_comp: list, optional
-        List of indices to compare, in the form [exp_idx, baseline idx];
-        Diff will be calculated as exp_stat - base_stat
-    leads : list
-        List of lead times in hours
-    v : int
-        Variable index within collection
-    var : str
-        Variable name
-    coll : str
-        Collection name
-    levs : list
-        List of levels to plot (multiple for 3D, single for 2D)
-    data : dict
-        Data dictionary with 'raw', 'avg', 'glo' arrays
-    models : list
-        List of model names (needed for comp mode)
-    nfcsts : int
-        Number of forecast initializations
-    season_year : str
-        Season and year string for titles
-    is_3d_map : dict
-        Maps collections to 3D boolean
-    title_map : dict
-        Maps collections to variable title strings
-    long_map : dict
-        Maps collections to variable long names
-    unit_map : dict
-        Maps collections to variable units
-    lev_levs_map : dict
-        Maps collections to level strings (for sl2d)
-    lats : array
-        Latitude array
-    lons : array
-        Longitude array
-    nlats : int
-        Number of latitudes
-    nlons : int
-        Number of longitudes
-    fvars : dict
-        Maps collections to variable lists
-    season : str
-        Season string
-    output_dir : str
-        Output directory path
-    dpi : int
-        Plot resolution
-    colormaps : dict
-        Dictionary of colormaps
-    sig_levs : list
-        Significance levels for comp mode
-    fcst_interval: int
-        number of hours between forecasts (used for file naming)
-    levels_to_plot: list, optional
-        Levels that we want to plot; others are ignored
-
-    Returns:
-    --------
-    None
-        Plots saved to disk
+    exps_to_comp: list
+        List of [exp_idx, baseline_idx] pairs for each row
+        Example: [[2, 1], [3, 0]] creates 2 rows
+    ... (other parameters same as before)
     """
 
     # Keep reference to ORIGINAL full levels list
-    original_levels = levs[:]  # Make a copy before filtering
+    original_levels = levs[:]
 
     # Filter levels
     if levels_to_plot:
@@ -892,7 +930,7 @@ def create_level_plots(
 
     if len(exps_to_comp) != 2:
         raise ValueError(
-            "<2 or >2 experiment comparisons detected, this is not supported."
+            "Expected exactly 2 comparisons for 2-row layout."
         )
 
     print(f"\nSetting up variable output directory in: {output_dir}")
@@ -901,7 +939,7 @@ def create_level_plots(
     var_dir.mkdir(parents=True, exist_ok=True)
     print(f"  Created directory: {var_dir}")
 
-    # Create subdirectories for each level after filtering
+    # Create subdirectories for each level
     level_subdirs = {}
     for lev in levs:
         level_subdirs[lev] = var_dir / str(lev)
@@ -909,21 +947,41 @@ def create_level_plots(
     print(f"  Created level subdirs in {var_dir}; {levs}")
 
     # ═══════════════════════════════════════════════════════════════
+    # Set up hard-coded colormap limits
+    # ═══════════════════════════════════════════════════════════════
+    var_upper = var.upper()
+    
+    if stat_limits is not None and var_upper in stat_limits:
+        # Use provided hard-coded limits
+        FCmax_diff = stat_limits[var_upper]['forecast_diff']
+        ACCmax_raw = stat_limits[var_upper]['acc_raw']
+        RMSmax_raw = stat_limits[var_upper]['rmse_raw']
+        print(f"  Using hard-coded limits: FC_diff=±{FCmax_diff}, ACC_raw=[0,{ACCmax_raw}], RMS_raw=[0,{RMSmax_raw}]")
+    else:
+        # Fallback to default values
+        FCmax_diff = 5.0
+        ACCmax_raw = 1.0
+        RMSmax_raw = 10.0
+        print(f"  WARNING: No hard-coded limits for {var_upper}, using defaults")
+
+    # Store limits for all levels (same for each level)
+    level_limits = {}
+    for l, lev in enumerate(levs):
+        level_limits[l] = (FCmax_diff, ACCmax_raw, RMSmax_raw)
+
+    # ═══════════════════════════════════════════════════════════════
     # Loop through each lead time (OUTER LOOP)
     # ═══════════════════════════════════════════════════════════════
-    # Store limits per comparison -- reused across lead times
-    # Each level has its own limit
-    level_limits = {0: {}, 1: {}}
     print(f"Iterating over lead times: {leads}")
     for n, lead in enumerate(leads):
 
         # ═══════════════════════════════════════════════════════════
-        # Generate significance masks once per lead (for all levels)
+        # Generate significance masks once per lead (for forecast diff only)
         # ═══════════════════════════════════════════════════════════
-        print("  Creating 3d masks per experiment comparison...")
+        print("  Creating 3d masks for forecast differences...")
         masks_3d = []
         for exp_idx, base_idx in exps_to_comp:
-            # Generate full 3D masks once per lead
+            # Generate masks for forecast differences only (stat_idx=0)
             masks_3d.append(
                 generate_masks(
                     data["raw"][coll][exp_idx][:, n, :],
@@ -943,244 +1001,162 @@ def create_level_plots(
         # ══════════════════════════════════════════════════════════
         for l, lev in enumerate(levs):
             actual_lev_idx = original_levels.index(lev)
+            
+            print(f"    Plotting level {lev} mb (filtered index {l}, actual index {actual_lev_idx})")
+            
             # ═══════════════════════════════════════════════════════
-            # Extract level-specific masks (comp mode only)
+            # Extract level-specific masks for forecast differences
             # ═══════════════════════════════════════════════════════
-            print(
-                f"    Plotting level {lev} mb (filtered index {l}, "
-                f"actual index {actual_lev_idx})"
-            )
-            # Extract this level's masks from 3D masks
-            # Masks_3d is now a 4d array, first dim is comparison idx
-            masks = []
-            for comp_result in masks_3d:  # iterate over 2 comparisons
-                comp_level_masks = []
-                for stat_masks in comp_result:  # iterate over 3 stats
-                    # Extract level l from each significance level mask
-                    level_masks = [
-                        sig_mask[l, :, :] for sig_mask in stat_masks
-                    ]
-                    comp_level_masks.append(level_masks)
-                masks.append(comp_level_masks)
+            fcst_masks = []
+            for comp_result in masks_3d:
+                # Extract forecast mask (stat_idx=0)
+                stat_masks = comp_result[0]  # First stat is forecast
+                level_masks = [sig_mask[l, :, :] for sig_mask in stat_masks]
+                fcst_masks.append(level_masks)
             print("    Done.")
 
             # ═══════════════════════════════════════════════════════
-            # Extract and prepare data for this lead/level
-            # ═══════════════════════════════════════════════════════
-
             # Setup plot metadata
+            # ═══════════════════════════════════════════════════════
             print(f"   Creating plot metadata/gridspec for level: {lev}")
             u = unit_map[coll][v]
             pre, ending, gs, fig = setup_plot_metadata(
-                coll,
-                v,
-                lev,
-                lead,
-                # mode,
-                title_map,
-                long_map,
-                is_3d_map,
-                lev_levs_map,
-                season,
-                fvars,
+                coll, v, lev, lead, title_map, long_map, is_3d_map, lev_levs_map, season, fvars,
             )
 
             print("      Iterating over comparisons...")
             top_title = [""]
+
+            first_exp_idx = exps_to_comp[0][0]
+            first_model = models[first_exp_idx].split("_")[0]  # Get short name (e.g., "AIFS")
+            
             for comp_idx, (exp_idx, base_idx) in enumerate(exps_to_comp):
-                base_avg = data["avg"][coll][exp_idx][n]
-                base_glo = data["glo"][coll][exp_idx][n]
-                comp_avg = data["avg"][coll][base_idx][n]
-                comp_glo = data["glo"][coll][base_idx][n]
+                # Get data for both experiments
+                exp_avg = data["avg"][coll][exp_idx][n]      # Comparison experiment
+                exp_glo = data["glo"][coll][exp_idx][n]
+                base_avg = data["avg"][coll][base_idx][n]    # Baseline experiment
+                base_glo = data["glo"][coll][base_idx][n]
 
                 exp_model, base_model = models[exp_idx], models[base_idx]
-                print(
-                    f"        Comparison {comp_idx}: {exp_model} vs {base_model}"
-                )
+                print(f"        Comparison {comp_idx}: {exp_model} vs {base_model}")
 
                 # ═══════════════════════════════════════════════════════
-                # Calculate limits once per comparison per level (on first lead only)
+                # Extract limits
                 # ═══════════════════════════════════════════════════════
-                limit_percentiles = [75, 50, 50]
-                if n == 0:  # First lead
-                    # Extract fcst diff across all leads
-                    # 1. Filter to leads we are using
-                    lead_slice = lead_indices if lead_indices else slice(None)
+                FCmax_diff, ACCmax_raw, RMSmax_raw = level_limits[l]
 
-                    # Indexing: all leads, 0 idx for forecast, v for var, l for lvl,
-                    #           all lat, all lon
-                    fcst_idx_slice = np.s_[lead_slice, 0, v, actual_lev_idx, :, :]
-                    fcst_diff_lvl = (
-                        data["avg"][coll][exp_idx][fcst_idx_slice]
-                        - data["avg"][coll][base_idx][fcst_idx_slice]
-                    )
-                    fcst_diff_limit = get_limits_from_diff(
-                        np.nanmean(fcst_diff_lvl, axis=-1),  # Zonal mean
-                        percentile=limit_percentiles[0],
-                    )
-                    # Use ALL lead times to calculate ACC/RMSE max
-                    Amax_lvl, Rmax_lvl = get_limits_comp(
-                        data["avg"][coll][exp_idx][lead_slice, :],  # ALL leads
-                        data["avg"][coll][base_idx][lead_slice, :],
-                        f"{v},{l},:,:",
-                        use_mean=True,
-                        axis=-1,
-                        percentiles=limit_percentiles,
-                    )
-                    # Assign level limits based on all lead times
-                    level_limits[comp_idx][l] = (
-                        fcst_diff_limit,
-                        Amax_lvl,
-                        Rmax_lvl,
-                    )
+                if n == 0 and comp_idx == 0:
+                    print(f"      Using limits: FC_diff=±{FCmax_diff}, ACC_raw=[0,{ACCmax_raw}], RMS_raw=[0,{RMSmax_raw}]")
 
-                # Extract limits for this level, set unused to None
-                FCmax, Amax, Rmax = level_limits[comp_idx][l]
-                MEmax, cmax, cmin = None, None, None
+                # ═══════════════════════════════════════════════════════
+                # Extract data for each subplot
+                # Column 1: Forecast DIFFERENCE (exp - base)
+                # Column 2: Raw ACC from exp
+                # Column 3: Raw RMSE from exp
+                # ═══════════════════════════════════════════════════════
+                
+                # Column 1: Forecast difference
+                fcst_exp = exp_avg[0][v, actual_lev_idx, :, :]
+                fcst_base = base_avg[0][v, actual_lev_idx, :, :]
+                fcst_diff = fcst_exp - fcst_base
+                fcst_glo_diff = exp_glo[0][v, actual_lev_idx] - base_glo[0][v, actual_lev_idx]
+                
+                # Column 2: Raw ACC from comparison experiment
+                acc_raw = exp_avg[1][v, actual_lev_idx, :, :]
+                acc_glo_raw = exp_glo[1][v, actual_lev_idx]
+                
+                # Column 3: Raw RMSE from comparison experiment
+                rmse_raw = exp_avg[2][v, actual_lev_idx, :, :]
+                rmse_glo_raw = exp_glo[2][v, actual_lev_idx]
 
-                pct_as_str = ", ".join(f"{p}%" for p in limit_percentiles)
-                print(
-                    f"      Found limits (at {pct_as_str} percentiles): "
-                    f"FC={FCmax}, ACC={Amax}, RMS={Rmax}"
-                )
+                # DEBUG - Only print for first lead/level/comparison
+                if n == 0 and l == 0 and comp_idx == 0:
+                    print(f"\n      DEBUG DATA EXTRACTION:")
+                    print(f"        exp_avg shape: {np.array(exp_avg).shape}")
+                    print(f"        exp_avg[0] (fcst) shape: {exp_avg[0].shape}")
+                    print(f"        exp_avg[1] (acc) shape: {exp_avg[1].shape}")
+                    print(f"        exp_avg[2] (rmse) shape: {exp_avg[2].shape}")
+                    print(f"        acc_raw shape: {acc_raw.shape}")
+                    print(f"        acc_raw NaN%: {np.sum(np.isnan(acc_raw))/acc_raw.size*100:.1f}%")
+                    print(f"        acc_raw range: [{np.nanmin(acc_raw):.3f}, {np.nanmax(acc_raw):.3f}]")
+                    print(f"        rmse_raw NaN%: {np.sum(np.isnan(rmse_raw))/rmse_raw.size*100:.1f}%")
+                    print(f"        rmse_raw range: [{np.nanmin(rmse_raw):.3f}, {np.nanmax(rmse_raw):.3f}]")
 
-                def diff_slicer(i):
-                    base_data = base_avg[i][v, actual_lev_idx, :, :]
-                    comp_data = comp_avg[i][v, actual_lev_idx, :, :]
-                    diff_data = base_data - comp_data
-
-                    # DIAGNOSTIC
-                    # if i == 0 and l == 0:  # Only print once per comparison
-                    #     print(f"\n      DIAGNOSTIC for stat {i}, level {l}:")
-                    #     print(f"        base_avg shape: {base_avg[i].shape}")
-                    #     print(f"        base_data shape: {base_data.shape}")
-                    #     print(f"        base_data NaN%: {np.sum(np.isnan(base_data))/base_data.size*100:.1f}%")
-                    #     print(f"        comp_data NaN%: {np.sum(np.isnan(comp_data))/comp_data.size*100:.1f}%")
-                    #     print(f"        diff_data NaN%: {np.sum(np.isnan(diff_data))/diff_data.size*100:.1f}%")
-                    #     print(f"        base_glo value: {base_glo[i][v, l]}")
-                    #     print(f"        comp_glo value: {comp_glo[i][v, l]}")
-
-                    return [
-                        diff_data,
-                        base_glo[i][v, actual_lev_idx] - comp_glo[i][v, actual_lev_idx],
-                        masks[comp_idx][i],
-                    ]
-
-                # 3 stats for comp mode (differences only)
-                z0, z1, z2 = (diff_slicer(i) for i in range(3))
-                # ncols = 3
+                # ═══════════════════════════════════════════════════════
+                # Create titles
+                # ═══════════════════════════════════════════════════════
                 exp_model_short = exp_model.split("_")[0]
                 base_model_short = base_model.split("_")[0]
-                diff_string = f"({exp_model_short} - {base_model_short})"
 
-                def min_max_diff(z):
-                    min_val = float(np.nanmin(z[0]))
-                    max_val = float(np.nanmax(z[0]))
-                    return (f"{min_val:.3f}", f"{max_val:.3f}")
+                def min_max_stat(data):
+                    if np.all(np.isnan(data)):
+                        return ("NaN", "NaN")
+                    return (f"{float(np.nanmin(data)):.3f}", f"{float(np.nanmax(data)):.3f}")
 
-                def count_bad(z):
-                    raw_bad = np.sum(np.isnan(z[0]))
-                    total = z[0].size
-                    percent_bad = (raw_bad / total) * 100
-                    return raw_bad, percent_bad
-
-
-                min_max_diffs = [min_max_diff(z) for z in [z0, z1, z2]]
-                nan_counts = [count_bad(z) for z in [z0, z1, z2]]
+                fcst_minmax = min_max_stat(fcst_diff)
+                acc_minmax = min_max_stat(acc_raw)
+                rmse_minmax = min_max_stat(rmse_raw)
 
                 titles = [
                     (
-                        f"Mean Forecast Diff {diff_string}: {z0[1]:.2f} {u}"
-                        "\nMin/Max Diff: "
-                        f"{min_max_diffs[0][0]}, {min_max_diffs[0][1]}"
-                        # f"\nBad values (GRAY): {nan_counts[0][0]}, {nan_counts[0][1]:.1f}%"
+                        f"Forecast Diff ({exp_model_short} - {base_model_short}): {fcst_glo_diff:.2f} {u}"
+                        f"\nMin/Max: {fcst_minmax[0]}, {fcst_minmax[1]}"
+                        f"\nMean Diff: {np.nanmean(fcst_diff):.2f} {u}"  # ADD THIS
                     ),
                     (
-                        f"Mean ACC Diff (F-A) {diff_string}: {z1[1]:.2f}"
-                        "\nMin/Max Diff: "
-                        f"{min_max_diffs[1][0]}, {min_max_diffs[1][1]}"
-                        # f"\nBad values (GRAY): {nan_counts[1][0]}, {nan_counts[1][1]:.1f}%"
+                        f"ACC (F-A) - {exp_model_short}: {acc_glo_raw:.3f}"
+                        f"\nMin/Max: {acc_minmax[0]}, {acc_minmax[1]}"
+                        f"\nMean ACC: {np.nanmean(acc_raw):.3f}"  # ADD THIS
                     ),
                     (
-                        f"Global Mean RMSE Diff (F-A) {diff_string}: {z2[1]:.2f}"
-                        "\nMin/Max Diff: "
-                        f"{min_max_diffs[2][0]}, {min_max_diffs[2][1]}"
-                        # f"\nBad values (GRAY): {nan_counts[2][0]}, {nan_counts[2][1]:.1f}%"
+                        f"RMSE (F-A) - {exp_model_short}: {rmse_glo_raw:.2f} {u}"
+                        f"\nMin/Max: {rmse_minmax[0]}, {rmse_minmax[1]}"
+                        f"\nMean RMSE: {np.nanmean(rmse_raw):.2f} {u}"  # ADD THIS
                     ),
                 ]
-                # colormap_key = "c" if colormap_key is none else colormap_key
+                
+                # Data structure: (title, data, colormap_key, mask, is_difference, vmax)
                 plot_data = [
-                    (titles[0], z0[0], colormap_key, z0[2]),
-                    (titles[1], z1[0], colormap_key, z1[2]),
-                    (titles[2], z2[0], colormap_key, z2[2]),
+                    (titles[0], fcst_diff, colormap_key, fcst_masks[comp_idx], True, FCmax_diff),   # Use passed colormap
+                    (titles[1], acc_raw, 'acc', None, False, ACCmax_raw),                           # Use ACC colormap
+                    (titles[2], rmse_raw, 'rmse', None, False, RMSmax_raw),                         # Use RMSE colormap
                 ]
 
                 # ═══════════════════════════════════════════════════════
                 # Create each subplot
                 # ═══════════════════════════════════════════════════════
-                print(f"          Creating comp plots for row {comp_idx}...")
-                for i, (title, zdata, cmap_key, mask) in enumerate(plot_data):
+                print(f"          Creating plots for row {comp_idx}...")
+                for i, (title, zdata, cmap_key, mask, is_diff, vmax) in enumerate(plot_data):
 
                     # Setup subplot axis
                     prow = comp_idx * 3
                     col = i
-                    ax = fig.add_subplot(
-                        gs[prow, col], projection=ccrs.PlateCarree()
-                    )
+                    ax = fig.add_subplot(gs[prow, col], projection=ccrs.PlateCarree())
                     cax = fig.add_subplot(gs[prow + 1, col])
 
                     # Setup level subplot (add cyclic point, format map)
-                    x, y, zdata, mask = setup_level_subplot(
-                        ax, zdata, lons, lats, mask
-                    )
+                    x, y, zdata_cyclic, mask_cyclic = setup_level_subplot(ax, zdata, lons, lats, mask)
 
                     # Create the subplot plot and colorbar
-                    plot_level_subplot(
-                        fig,
-                        ax,
-                        cax,
-                        i,
-                        title,
-                        zdata,
-                        cmap_key,
-                        mask,
-                        x,
-                        y,
-                        plot_data,
-                        colormaps,
-                        cmax,
-                        cmin,
-                        FCmax,
-                        MEmax,
-                        Rmax,
-                        Amax,
+                    plot_level_subplot_v2(
+                        fig, ax, cax, i, title, zdata_cyclic, cmap_key, mask_cyclic, 
+                        x, y, colormaps, is_diff, vmax
                     )
-
-                # ═══════════════════════════════════════════════════════
-                # Add parts to main title
-                # ═══════════════════════════════════════════════════════
-                # top_title.append(
-                #     f"Row {comp_idx}: {exp_model} vs {base_model}"
-                # )
 
             # ═══════════════════════════════════════════════════════
             # Add main title to figure, save to disk
             # ═══════════════════════════════════════════════════════
-
             print("        Saving plot for var/lead/level...")
-
-            # MODE IS ALWAYS COMP NOW
+            
             top_title += [
-                f"Forecasts Statistics ({nfcsts})  {season_year}",
+                f"{first_model} Statistics - {season_year}",  # Changed: use model name, removed (nfcsts)
                 f"{ending}",
-                "(contours: >90% confidence)"
+                "Contours on forecast diff: >90% confidence"
             ]
             top_title = "\n".join(top_title)
 
-            plt.suptitle(top_title, fontsize=12, y=0.98)  # Smaller font
-            plt.subplots_adjust(
-                top=0.76
-            )  # More space at top (lower value = more space)
+            plt.suptitle(top_title, fontsize=12, y=0.98)
+            plt.subplots_adjust(top=0.76)
 
             # Save plot
             plotnm = f"{pre}_lead_{lead}_hrs.png"
@@ -1189,24 +1165,24 @@ def create_level_plots(
             plt.close("all")
             print(f"        Done.")
 
-
     # ═══════════════════════════════════════════════════════════════
     # Save all plots to .gif across all lead times
     # ═══════════════════════════════════════════════════════════════
     print(f"Generating .gifs of all plots...")
     for lev, level_subdir in level_subdirs.items():
         print(f"  Processing level subdir: {level_subdir}...")
-        png_filenames = list(level_subdir.glob("*.png"))
-        png_images = [Image.open(fn) for fn in png_filenames]
-        base_output_name = str(png_filenames[0]).split("_lead")[0]
-        png_images[0].save(
-            f"{base_output_name}_all_lead.gif",
-            save_all=True,
-            append_images=png_images[1:],
-            duration=gif_frame_duration,
-            loop=0,
-        )
-        print(f"  Saved to: {base_output_name}_all_lead.gif!")
+        png_filenames = sorted(list(level_subdir.glob("*.png")))
+        if png_filenames:
+            png_images = [Image.open(fn) for fn in png_filenames]
+            base_output_name = str(png_filenames[0]).split("_lead")[0]
+            png_images[0].save(
+                f"{base_output_name}_all_lead.gif",
+                save_all=True,
+                append_images=png_images[1:],
+                duration=gif_frame_duration,
+                loop=0,
+            )
+            print(f"  Saved to: {base_output_name}_all_lead.gif!")
 
 # ================== SMALL DRIVER HELPERS ====================
 
@@ -1272,7 +1248,8 @@ def create_global_plots(
     levels_to_plot: List[int] = None,
     leads_to_plot: List[int] = None,
     exps_to_comp: List[List[int]] = [[1, 0]],
-    limit_percentiles: List[int] = [75, 75, 75],
+    limit_percentiles: List[int] = [90, 95, 95],  # Only used if stat_limits=None
+    stat_limits: Dict[str, Dict[str, float]] = None,  # NEW: Hard-coded limits
     colormap_key: str = "ryb",
     gif_frame_duration: int = 1000,
     output_dir: str = "output",
@@ -1331,6 +1308,22 @@ def create_global_plots(
 
     # Check coastline data availability
     check_coastline_data()
+
+    # ========== DEFAULT HARD-CODED LIMITS ==========
+    # Define default limits if not provided
+    if stat_limits is None:
+        stat_limits = {
+            'T': {'forecast_diff': 5.0, 'acc_raw': 1.0, 'rmse_raw': 10.0},
+            'U': {'forecast_diff': 2.0, 'acc_raw': 1.0, 'rmse_raw': 5.0},
+            'V': {'forecast_diff': 2.0, 'acc_raw': 1.0, 'rmse_raw': 5.0},
+            'Z': {'forecast_diff': 50.0, 'acc_raw': 1.0, 'rmse_raw': 100.0},
+            'Q': {'forecast_diff': 1.0, 'acc_raw': 1.0, 'rmse_raw': 2.0},
+        }
+    
+    print(f"Using hard-coded colormap limits:")
+    for var, limits in stat_limits.items():
+        print(f"  {var}: Forecast_diff=±{limits['forecast_diff']}, ACC_raw=[0,{limits['acc_raw']}], RMSE_raw=[0,{limits['rmse_raw']}]")
+    print()
 
     # ========== EXTRACT DATA FROM DICT ==========
 
@@ -1442,13 +1435,36 @@ def create_global_plots(
         'custom_continuous', c_cmap, N=256
     )
 
+    # rd_yl_bl = mcolors.ListedColormap(plt.cm.RdYlBu_r(np.linspace(0, 1, 21)))
+
+    # colormaps = {
+    #     "c": c_cmap_continuous,
+    #     "rb": rdbu_discrete,
+    #     "ryb": mcolors.ListedColormap(red_yel_blue),
+    #     "b": mcolors.ListedColormap(c_cmap[:11]),
+    #     "o": mcolors.ListedColormap(c_cmap),
+    #     # New colormaps for ACC and RMSE
+    #     "acc": mcolors.ListedColormap(plt.cm.RdYlGn(np.linspace(0, 1, 21))),    # Red (bad) to Green (good)
+    #     "rmse": mcolors.ListedColormap(plt.cm.YlOrRd(np.linspace(0, 1, 21))),   # Yellow (good) to Red (bad)
+    # }
     colormaps = {
-        "c": c_cmap_continuous,                    # continuous colormap with white (high detail)
-        "rb": rdbu_discrete,                       # red to blue without white
-        "ryb": plt.cm.RdYlBu_r(np.linspace(0, 1, 21)),  # red/yellow/blue
-        "b": mcolors.ListedColormap(c_cmap[:11]),  # blue half of colormap
-        "o": mcolors.ListedColormap(c_cmap),       # full colormap for contours
+        "c": c_cmap_continuous,
+        "rb": rdbu_discrete,
+        "ryb": plt.cm.viridis,      # Continuous - just use directly
+        "b": plt.cm.viridis,
+        "o": plt.cm.viridis,
+        "acc": plt.cm.viridis,
+        "rmse": plt.cm.viridis,
     }
+    # colormaps = {
+    #     "c": c_cmap_continuous,
+    #     "rb": rdbu_discrete,
+    #     "ryb": mcolors.ListedColormap(plt.cm.coolwarm(np.linspace(0, 1, 21))),  # Sample it
+    #     "b": mcolors.ListedColormap(plt.cm.coolwarm(np.linspace(0, 1, 21))),
+    #     "o": mcolors.ListedColormap(plt.cm.coolwarm(np.linspace(0, 1, 21))),
+    #     "acc": mcolors.ListedColormap(plt.cm.coolwarm(np.linspace(0, 1, 21))),
+    #     "rmse": mcolors.ListedColormap(plt.cm.coolwarm(np.linspace(0, 1, 21))),
+    # }
 
     # Plot saving info
     dpi = data_dict["plot_dpi"]
@@ -1485,7 +1501,8 @@ def create_global_plots(
         "fcst_interval": fcst_interval,
         "levels_to_plot": levels_to_plot,  # KEEP - used for filtering
         "lead_indices": lead_indices,  # 4/1: added to fix cmap limits
-        "limit_percentiles": limit_percentiles,  # 4/1: added as func arg
+        "stat_limits": stat_limits,  # 5/13: Add hard-coded limits
+        # "limit_percentiles": limit_percentiles,  # 4/1: added as func arg
         "colormap_key": colormap_key,
         "gif_frame_duration": gif_frame_duration,
     }

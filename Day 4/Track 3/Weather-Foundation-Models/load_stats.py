@@ -68,7 +68,7 @@ def _open_datasets_apply_excl(filename_list):
     files_with_exclusions = 0
     experiment_excluded_dates = set()
     for filename in filename_list:
-        ds = xr.open_dataset(filename)
+        ds = xr.open_dataset(filename, engine='h5netcdf')
         datasets.append(ds)
         basename = os.path.basename(filename)
         excl_match = re.search(r"excl(\d+)", basename)

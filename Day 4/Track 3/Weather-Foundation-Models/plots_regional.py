@@ -285,8 +285,12 @@ def plot_level(
 
     # ========== UPPER PANEL: Plot ACC (stat_idx=0) ==========
 
-    # Filter out ERA5 to remove useless info
-    plotting_exps = [exp for exp in available_exps if "ERA5" not in models[exp]]
+    # Filter out ERA5 to remove useless info (control experiments)
+    exclude_models = ["ERA5", "MERRA2"]  # These are controls
+    plotting_exps = [
+        exp for exp in available_exps 
+        if not any(excl in models[exp] for excl in exclude_models)
+    ]
 
     acc_idx = 0
     # Plot acc for all plotting experiments
@@ -307,10 +311,10 @@ def plot_level(
 
         # Format label: control gets second part, others get first part
         parts = model.split("_")
-        if exp_idx == 0:  # Control
+        if exp_idx <= 1:  # Control
             label = parts[1] if len(parts) == 2 else model
         else:  # Experiments
-            label = parts[0] if len(parts) >= 1 else model
+            label = parts[0] + " vs " + parts[1] if len(parts) >= 1 else model
 
         # Plot ACC line
         axu.plot(
@@ -326,7 +330,7 @@ def plot_level(
         final = y_vals_acc[-1]
         if np.isfinite(final):
             # For ACC (0-1 range), use fixed offset
-            offset_increment = 0.015  # Adjust this value if needed
+            offset_increment = 0.03  # Adjust this value if needed
             y_offset = (idx - len(plotting_exps)/2) * offset_increment
 
             txt = axu.text(
@@ -389,10 +393,10 @@ def plot_level(
 
         # Format label: control gets second part, others get first part
         parts = model.split("_")
-        if exp_idx == 0:  # Control
+        if exp_idx <= 1:  # Control
             label = parts[1] if len(parts) == 2 else model
         else:  # Experiments
-            label = parts[0] if len(parts) >= 1 else model
+            label = parts[0] + " vs " + parts[1] if len(parts) >= 1 else model
 
         # Plot RMSE line
         axl.plot(
@@ -410,7 +414,7 @@ def plot_level(
             # For RMSE (variable range), calculate offset based on y-axis range
             ymin_rmse, ymax_rmse = axl.get_ylim()
             y_range = ymax_rmse - ymin_rmse
-            offset_increment = y_range * 0.02  # 2% of y-axis range
+            offset_increment = y_range * 0.03  # 2% of y-axis range
             y_offset = (idx - len(plotting_exps)/2) * offset_increment
 
             txt = axl.text(
@@ -512,16 +516,16 @@ def plot_level(
 
     # Add custom entry for synoptic CI (95%)
     control_color_idx = available_exps.index(0)
-    control_model = models[0].split("_")[1]
+    base_model = models[0].split("_")[1]
     synoptic_ci_line = Line2D(
         [0], [0],
         color=colors[control_color_idx],
         linestyle="--",
         linewidth=1.0,
-        label=f"95% Synoptic CI ({control_model})"
+        label=f"95% Synoptic CI ({base_model})"
     )
     handles.append(synoptic_ci_line)
-    leg_labels.append(f"95% Synoptic CI ({control_model})")
+    leg_labels.append(f"95% Synoptic CI ({base_model})")
 
     legend = axl.legend(
         handles,
