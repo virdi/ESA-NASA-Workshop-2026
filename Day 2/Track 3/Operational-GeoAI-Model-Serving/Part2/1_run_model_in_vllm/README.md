@@ -7,9 +7,9 @@ vLLM doesn't load PyTorch Lightning checkpoints or TerraTorch YAML configs out o
 If you don't already have the Prithvi flood-segmentation checkpoint and its TerraTorch config on disk, grab them from the pre-created HuggingFace model repository:
 
 ```bash
-cd 1_run_model_in_vllm
-hf download mgazz/prithvi-eo-flood --local-dir config_deploy.yaml
-hf download mgazz/prithvi-eo-flood --local-dir state_dict.ckpt
+cd /workspace/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/1_run_model_in_vllm/
+hf download mgazz/prithvi-eo-flood config_deploy.yaml --local-dir .
+hf download mgazz/prithvi-eo-flood state_dict.ckpt --local-dir .
 ```
 
 The rest of this README assumes both files (`state_dict.ckpt` and `config_deploy.yaml`) are in the current directory.
