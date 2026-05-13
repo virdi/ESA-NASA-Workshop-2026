@@ -22,16 +22,8 @@ Now that there's a server, push some load at it. Two tools, two different questi
 - `guidellm` — sweeps across request rates to find where the server starts to fall over
 - A notebook reads the resulting `results.json` and pulls out the practical capacity of the deployment
 
-The point is to learn the difference between a spot-check benchmark and a capacity curve, and how to read the latency knee that marks server saturation.
+The point is to learn the different tools available to benchmark EO models.
 
-### [Step 3: (Bonus) Custom IOProcessor](./3_terratorch-flip-processor/README.md)
-
-vLLM speaks tensors-in / tensors-out. Real geospatial users send GeoTIFFs and expect GeoTIFFs back. The IOProcessor is the adapter that sits between the two. This step walks through a small custom processor that flips the input and lets the output come back flipped, so you can visually confirm the plugin ran:
-- How a custom IOProcessor is structured
-- How to register it with vLLM via Python entry points
-- How to thread per-request state through the parent's pipeline without re-implementing it
-
-You come out with an installable `terratorch-flip-processor` package, auto-registered with vLLM.
 
 ## Prerequisites
 
@@ -76,4 +68,3 @@ Work through the directories in order. Each has its own README with the commands
 
 1. [`1_run_model_in_vllm/`](./1_run_model_in_vllm/README.md) — prepare the model artifacts and serve them with vLLM
 2. [`2_vllm_benchmarking/`](./2_vllm_benchmarking/README.md) — benchmark the running server with `vllm bench` and `guidellm`
-3. [`3_terratorch-flip-processor/`](./3_terratorch-flip-processor/README.md) — build and install the custom IOProcessor
