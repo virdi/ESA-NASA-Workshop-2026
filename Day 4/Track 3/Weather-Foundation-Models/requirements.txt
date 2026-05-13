@@ -56,6 +56,7 @@ xxhash
 # --- GenCast / xarray IO ---
 xarray
 netCDF4
+h5py
 h5netcdf
 IPython
 
