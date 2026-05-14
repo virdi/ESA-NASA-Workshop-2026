@@ -1,6 +1,6 @@
 # Model Preparation and Execution with vLLM
 
-vLLM doesn't load PyTorch Lightning checkpoints or TerraTorch YAML configs out of the box. This step translates between them: produce a `config.json` and a `.bin` weights file from your TerraTorch artifacts, then start the server.
+This step prepares the checkpoint to be served via vLLM: produce a `config.json` and a `.bin` weights file from your TerraTorch artifacts, then start the server.
 
 ## Step 0: Get the model checkpoint and config
 
@@ -16,7 +16,9 @@ The rest of this README assumes both files (`state_dict.ckpt` and `config_deploy
 
 ## Step 1: Generate the vLLM config
 
-Run [`vllm_config_generator.py`](vllm_config_generator.py) to turn the TerraTorch YAML into the `config.json` that vLLM expects. The script reads the YAML, adds the vLLM-specific fields (architecture name and related metadata), embeds the input tensor shape and dtype, and writes `config.json` next to the input file.
+Run [`vllm_config_generator.py`](vllm_config_generator.py) to turn the TerraTorch YAML into the `config.json` that vLLM expects. The script reads the YAML, adds the vLLM-specific fields (architecture name and related metadata), embeds the input tensor shape and dtype, and writes `config.json` next to the input file. 
+
+**Note:** Input details are necessary to correctly warm-up the vLLM server.
 
 ```bash
 
@@ -33,7 +35,7 @@ The result lands as `config.json` next to your input YAML.
 
 ## Step 2: Convert the checkpoint to a binary
 
-vLLM wants a plain PyTorch state dict in `.bin` form. Lightning checkpoints wrap the state dict in extra training scaffolding (optimizer state, criterion weights, and so on), so [`convert_ckpt_to_bin.py`](convert_ckpt_to_bin.py) pulls out the `state_dict`, drops training-only entries, and saves the result as a standard PyTorch binary.
+vLLM wants a plain PyTorch state dict in `.bin` form, so [`convert_ckpt_to_bin.py`](convert_ckpt_to_bin.py) pulls out the `state_dict`, drops training-only entries, and saves the result as a standard PyTorch binary.
 
 ```bash
 
@@ -60,6 +62,8 @@ vllm serve 1_run_model_in_vllm \
    --io-processor-plugin terratorch_segmentation \
    --enforce-eager
 ```
+
+**Note:** the path set after `vllm serve` is used as model name in the vLLM API.
 
 What each flag is doing:
 - `1_run_model_in_vllm` — the directory holding `config.json` and the `.bin`

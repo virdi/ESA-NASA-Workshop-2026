@@ -1,6 +1,6 @@
 # Step 2: Benchmarking the vLLM Server
 
-The model is loaded and the IOProcessor is wired up. So how does the server actually hold up under load? Two tools for measuring throughput and latency:
+The model is loaded so how does the server actually hold up under load? Two tools for measuring throughput and latency:
 
 - **`vllm bench`** — the load generator built into vLLM itself
 - **`guidellm`** — a more flexible benchmarking harness from the broader LLM-serving ecosystem
@@ -42,7 +42,7 @@ Strengths: nothing extra to install, and the metric definitions match what the v
 
 ## `guidellm`
 
-[`guidellm`](https://github.com/neuralmagic/guidellm) is a standalone benchmarking tool that focuses on **load-curve sweeps** — running the same workload at progressively higher rates to find the saturation point of the server, not just measure a single rate.
+[`guidellm`](https://github.com/vllm-project/guidellm) is a standalone benchmarking tool that focuses on **load-curve sweeps** — running the same workload at progressively higher rates to find the saturation point of the server, not just measure a single rate.
 
 ```bash
 guidellm benchmark \
