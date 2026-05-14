@@ -15,6 +15,7 @@ From this directory:
 ```bash
 cd 3_terratorch-mask-closing-processor
 uv pip install -e .
+cd ..
 ```
 
 This registers `mask_closing` as a vLLM I/O processor plugin. No code changes to vLLM are needed — entry points do the wiring.
@@ -29,7 +30,7 @@ Part2$ hf download mgazz/prithvi-eo-burnscars park_fire_scaled.tif --local-dir .
 ```
 
 ```bash
-vllm serve mgazz/prithvi-eo-burnscars \
+Part2$ vllm serve mgazz/prithvi-eo-burnscars \
     --skip-tokenizer-init \
     --enable-mm-embeds \
     --io-processor-plugin mask_closing \
