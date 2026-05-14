@@ -42,20 +42,14 @@ def create_base_patterns(forecast_model):
         exp3_base_pattern
     ]
 
-def get_stat_dataset_filenames(base_glob_patterns, date_str):
+def get_stat_dataset_filenames(base_glob_patterns, month):
     filename_dict = {"regional": [], "global": []}
-
-    # Parse S3 bucket and prefix
+    
     S3_BUCKET = "enw-04241552-kx1nks-shared"
     BASE_PREFIX = "data/stats"
     
-    start_str, end_str = date_str.split('-')
-    start_date = datetime.strptime(start_str, "%Y%m%d")
-    month_name = start_date.strftime("%B").lower()  # "may"
-    year = start_date.strftime("%Y")                # "2024"
-
-    bucket_dir = f"{month_name}_{year}"
-    print(bucket_dir)
+    # Direct construction
+    bucket_dir = f"{month.lower()}_2024"
     prefix = f"{BASE_PREFIX}/{bucket_dir}/"
 
     # Initialize S3 client
@@ -72,7 +66,7 @@ def get_stat_dataset_filenames(base_glob_patterns, date_str):
 
     # Build patterns and filter
     for base_pattern in base_glob_patterns:
-        pattern = f"stats*{base_pattern}_{date_str}*.nc4"
+        pattern = f"stats*{base_pattern}*.nc4"
         
         # Filter files matching the pattern
         stat_filenames = [

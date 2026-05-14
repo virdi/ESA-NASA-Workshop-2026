@@ -45,13 +45,13 @@ colors = [
     "#228B22",
 ]  # forest green
 
-# Variables metadata
 vars_title_map = {
     "H": "hght",
     "U": "uwnd",
     "V": "vwnd",
     "T": "tmpu",
     "Q": "sphu",
+    "Z": "geop",
     "P": "slp",
     "PS": "sfcp",
     "Q2M": "sphu",
@@ -59,16 +59,24 @@ vars_title_map = {
     "U10M": "uwnd",
     "V10M": "vwnd",
     "D2M": "dwpt",
+    # ← ADD LOWERCASE VERSIONS
+    "Q2m": "sphu",
+    "T2m": "tmpu",
+    "U10m": "uwnd",
+    "V10m": "vwnd",
+    "D2m": "dwpt",
     "AOD": "aod",
     "LOGAOD": "lnaod",
     "PM25": "pm25",
 }
+
 vars_long_map = {
     "H": "Heights",
     "U": "U-Wind",
     "V": "V-Wind",
     "T": "Temperature",
     "Q": "Specific Humidity",
+    "Z": "Geopotential",
     "P": "Sea-Level Pressure",
     "PS": "Surface Pressure",
     "Q2M": "2m Specific Humidity",
@@ -76,16 +84,24 @@ vars_long_map = {
     "U10M": "10m U-Wind",
     "V10M": "10m V-Wind",
     "D2M": "2m Dew Point",
+    # ← ADD LOWERCASE VERSIONS
+    "Q2m": "2m Specific Humidity",
+    "T2m": "2m Temperature",
+    "U10m": "10m U-Wind",
+    "V10m": "10m V-Wind",
+    "D2m": "2m Dew Point",
     "AOD": "Total Aerosol Extinction AOT [550 nm]",
     "LOGAOD": "log(AOD+0.01)",
     "PM25": "PM2.5 Total Mass",
 }
+
 vars_unit_map = {
     "H": "m",
     "U": "m/s",
     "V": "m/s",
     "T": "K",
     "Q": "g/kg",
+    "Z": "m²/s²",
     "P": "hPa",
     "PS": "hPa",
     "Q2M": "g/kg",
@@ -93,6 +109,12 @@ vars_unit_map = {
     "U10M": "m/s",
     "V10M": "m/s",
     "D2M": "K",
+    # ← ADD LOWERCASE VERSIONS
+    "Q2m": "g/kg",
+    "T2m": "K",
+    "U10m": "m/s",
+    "V10m": "m/s",
+    "D2m": "K",
     "AOD": "",
     "LOGAOD": "",
     "PM25": "µg/m3",
@@ -102,30 +124,30 @@ vars_unit_map = {
 stat_label_map = {
     "acorr": "Anomaly Correlation",
     "rms": "Root Mean Square Error",
-    "rms_ran": "RMS for RANDOM Error",
-    "rms_bar": "RMS for BIAS Error",
-    "rms_amp": "RMS for AMPLITUDE Error",
-    "rms_phz": "RMS for PHASE Error",
 }
 stat_output_map = {
     "acorr": "corcmp",
-    "rms": "rmscmp",
-    "rms_ran": "rmscmp_RANDOM",
-    "rms_bar": "rmscmp_BIAS",
-    "rms_amp": "rmscmp_AMPLITUDE",
-    "rms_phz": "rmscmp_PHASE",
+    "rms": "rmscmp"
 }
 stat_shortname_map = {
     "acorr": "ACORR",
     "rms": "RMSE",
-    "rms_ran": "RMS RANDOM Error",
-    "rms_bar": "RMS BIAS Error",
-    "rms_amp": "RMS AMPLITUDE Error",
-    "rms_phz": "RMS PHASE Error",
 }
 
 # 3d variables min/max magnitude for zonal RMS plots
-vars_range_map = {"H": 4, "U": 0.4, "V": 0.4, "T": 0.2, "Q": 0.1}
+vars_range_map = {
+    "H": 4,
+    "U": 0.4,
+    "V": 0.4,
+    "T": 0.2,
+    "Q": 0.1,
+    "Z": 40,  # ← ADD THIS (adjust based on your data)
+    "Q2m": 0.1,  # or "Q2m": 0.1
+    "T2m": 0.2,  # or "T2m": 0.2
+    "U10m": 0.4,  # or "U10m": 0.4
+    "V10m": 0.4,  # or "V10m": 0.4
+    "D2m": 0.2,  # or "D2m": 0.2
+}
 
 # Regions metadata
 region_short_map = {
@@ -168,31 +190,6 @@ region_long_map = {
     "TRL": "Tropics (Lats: -20,20) Land-only",
     "SHL": "S.Hem. ExtraTropics (Lats: -20,-80) Land-only",
 }
-
-'''
-[72, 71, 68, 63, 56, 53, 51, 48, 45, 44, 43, 41, 39, 34]
-
-These levels, based on MERRA-2 data, are specifically at:
-985, 970, 925, 850, 700, 600, 525, 412, 288, 245, 208, 150, 109, and 48 hPa
-'''
-
-PRITHVI_PRESSURE_LVLS = {
-    72: 985,
-    71: 970,
-    68: 925,
-    63: 850,
-    56: 700,
-    53: 600,
-    51: 525,
-    48: 412,
-    45: 288,
-    44: 245,
-    43: 208,
-    41: 150,
-    39: 109,
-    34: 48
-}
-
 
 # ================== REGIONAL FUNCTIONS ==================
 
@@ -241,6 +238,7 @@ def plot_level(
     fcst_length,
     models,
     available_exps,
+    plotting_exps,
     colors,
     stat_lbls,
     stat_outnms,
@@ -284,13 +282,6 @@ def plot_level(
     textsu, textsl = [], []
 
     # ========== UPPER PANEL: Plot ACC (stat_idx=0) ==========
-
-    # Filter out ERA5 to remove useless info (control experiments)
-    exclude_models = ["ERA5", "MERRA2"]  # These are controls
-    plotting_exps = [
-        exp for exp in available_exps 
-        if not any(excl in models[exp] for excl in exclude_models)
-    ]
 
     acc_idx = 0
     # Plot acc for all plotting experiments
@@ -348,29 +339,30 @@ def plot_level(
     if is_3d[coll]:
         ci_syn_l_vals = ci_syn_l[coll][:, acc_idx, v, lvl_idx][lead_indices]
         ci_syn_u_vals = ci_syn_u[coll][:, acc_idx, v, lvl_idx][lead_indices]
+    else:  # 2D
+        ci_syn_l_vals = ci_syn_l[coll][:, acc_idx, v][lead_indices]  # No lvl_idx
+        ci_syn_u_vals = ci_syn_u[coll][:, acc_idx, v][lead_indices]  # No lvl_idx
 
-        control_color_idx = available_exps.index(acc_idx)
-        ymin, ymax = axu.get_ylim()  # Save auto limits before adding CIs
+    control_color_idx = available_exps.index(acc_idx)
+    ymin, ymax = axu.get_ylim()  # Save auto limits before adding CIs
 
-        axu.plot(
-            x_vals,
-            ci_syn_l_vals,
-            color=colors[control_color_idx],
-            linestyle="--",
-            linewidth=1.0,
-        )
-        axu.plot(
-            x_vals,
-            ci_syn_u_vals,
-            color=colors[control_color_idx],
-            linestyle="--",
-            linewidth=1.0,
-        )
+    axu.plot(
+        x_vals,
+        ci_syn_l_vals,
+        color=colors[control_color_idx],
+        linestyle="--",
+        linewidth=1.0,
+    )
+    axu.plot(
+        x_vals,
+        ci_syn_u_vals,
+        color=colors[control_color_idx],
+        linestyle="--",
+        linewidth=1.0,
+    )
 
-        # Set ylim with CI max at 1.0 for ACC
-        axu.set_ylim(ymin, 1.0)
-    else:
-        print(f"WARNING: 2D collection in plot_level(); skipping synoptic CI.")
+    # Set ylim with CI max at 1.0 for ACC
+    axu.set_ylim(ymin, 1.0)
 
     # ========== LOWER PANEL: Plot RMSE (stat_idx=1) ==========
     rmse_idx = 1
@@ -430,35 +422,32 @@ def plot_level(
 
     # Plot synoptic confidence intervals for RMSE (control only, dashed)
     if is_3d[coll]:
-        ci_syn_l_vals_rmse = ci_syn_l[coll][:, rmse_idx, v, lvl_idx][
-            lead_indices
-        ]
-        ci_syn_u_vals_rmse = ci_syn_u[coll][:, rmse_idx, v, lvl_idx][
-            lead_indices
-        ]
+        ci_syn_l_vals_rmse = ci_syn_l[coll][:, rmse_idx, v, lvl_idx][lead_indices]
+        ci_syn_u_vals_rmse = ci_syn_u[coll][:, rmse_idx, v, lvl_idx][lead_indices]
+    else:  # 2D
+        ci_syn_l_vals_rmse = ci_syn_l[coll][:, rmse_idx, v][lead_indices]
+        ci_syn_u_vals_rmse = ci_syn_u[coll][:, rmse_idx, v][lead_indices]
 
-        control_color_idx = available_exps.index(0)
-        ymin_rmse, ymax_rmse = (
-            axl.get_ylim()
-        )  # Save auto limits before adding CIs
+    control_color_idx = available_exps.index(0)
+    ymin_rmse, ymax_rmse = axl.get_ylim()  # Save auto limits before adding CIs
 
-        axl.plot(
-            x_vals,
-            ci_syn_l_vals_rmse,
-            color=colors[control_color_idx],
-            linestyle="--",
-            linewidth=1.0,
-        )
-        axl.plot(
-            x_vals,
-            ci_syn_u_vals_rmse,
-            color=colors[control_color_idx],
-            linestyle="--",
-            linewidth=1.0,
-        )
+    axl.plot(
+        x_vals,
+        ci_syn_l_vals_rmse,
+        color=colors[control_color_idx],
+        linestyle="--",
+        linewidth=1.0,
+    )
+    axl.plot(
+        x_vals,
+        ci_syn_u_vals_rmse,
+        color=colors[control_color_idx],
+        linestyle="--",
+        linewidth=1.0,
+    )
 
-        # Restore auto limits for RMSE (don't cap at specific value)
-        axl.set_ylim(ymin_rmse, ymax_rmse)
+    # Restore auto limits for RMSE (don't cap at specific value)
+    axl.set_ylim(ymin_rmse, ymax_rmse)
 
     # ========== Format upper panel ==========
     # Use actual filtered lead times for x-axis
@@ -500,17 +489,14 @@ def plot_level(
     # ========== Add title and region/variable/season texts ==========
     u = vars_unit_map.get(var.upper())
     region = region_long_map.get(reg)
-    if coll[:2] == "de":
-        axu.set_title(
+    if coll[:2] == "de" and is_3d[coll]:
+        plot_title = (
             f"Forecast Statistics \n{lev}-mb "
-            f"{long[coll][v]} ({u}) {region}",
-            fontsize=12,
+            f"{long[coll][v]} ({u}) {region}"
         )
-    elif coll[:2] == "sl" or coll[:2] == "ae":
-        axu.set_title(
-            f"Forecast Statistics\n" f"{long[coll][v]} ({u}) {region}",
-            fontsize=12,
-        )
+    else:  # 2D variables (sl2d, ae2d, de2d)
+        plot_title = f"Forecast Statistics\n{long[coll][v]} ({u}) {region}"
+    axu.set_title(plot_title, fontsize=12)
 
     handles, leg_labels = axu.get_legend_handles_labels()
 
@@ -560,6 +546,7 @@ def plot_all_collection_levels(
     levs,
     available_exps,
     comparison_exps,  # Changed: added these parameters
+    plotting_exps,
     data,
     models,
     colors,
@@ -616,11 +603,11 @@ def plot_all_collection_levels(
             levels_to_iterate = enumerate(levs)
         else:
             levels_to_iterate = [
-                (l, lev) for l, lev in enumerate(levs) if lev in levels_to_plot
+                (lead_idx, lev) for lead_idx, lev in enumerate(levs) if lev in levels_to_plot
             ]
 
         # Create all stats in one image (should only be 2)
-        for l, lev in levels_to_iterate:
+        for lead_idx, lev in levels_to_iterate:
             plot_level(
                 # n,
                 stats_to_plot,
@@ -628,14 +615,15 @@ def plot_all_collection_levels(
                 coll,
                 v,
                 var,
-                l,
+                lead_idx,
                 lev,
                 data,
                 nfcsts,
                 fcst_interval,
                 fcst_length,
                 models,
-                available_exps,  # Changed
+                available_exps,
+                plotting_exps,
                 colors,
                 stat_lbls,
                 stat_outnms,
@@ -660,20 +648,6 @@ def plot_all_collection_levels(
                 lead_indices,
             )
             plt.close("all")
-
-        # ═══════════════════════════════════════════════════════════════
-        # Save all plots to .gif across all level times
-        # ═══════════════════════════════════════════════════════════════
-        # png_filenames = Path(plots_dir).glob("*.png")
-        # png_images = [Image.open(fn) for fn in png_filenames]
-        # base_output_name = png_filenames[0].split("_lead")[0]
-        # png_images[0].save(
-        #     f"{base_output_name}_all_lead.gif",
-        #     save_all=True,
-        #     append_images=png_images[1:],
-        #     duration=1000,
-        #     loop=0,
-        # )
 
 
 # ================== CONFIDENCE INTERVAL FUNCTIONS ==================
@@ -774,27 +748,17 @@ def calc_ci(
         ci_lower = np.zeros((nleads, nstats, nvars[coll]))
         ci_upper = np.zeros((nleads, nstats, nvars[coll]))
 
-    # DEBUG: Check for problematic input data
-    if np.any(~np.isfinite(ctl_data)):
-        print(f"  WARNING: Non-finite values in ctl_data for {coll}")
-        print(f"    NaN count: {np.sum(np.isnan(ctl_data))}")
-        print(f"    Inf count: {np.sum(np.isinf(ctl_data))}")
-    if np.any(~np.isfinite(model_data)):
-        print(f"  WARNING: Non-finite values in model_data for {coll}")
-        print(f"    NaN count: {np.sum(np.isnan(model_data))}")
-        print(f"    Inf count: {np.sum(np.isinf(model_data))}")
-
     # Create CIs, looping through leads and stats
-    for l in range(nleads):
+    for lead_idx in range(nleads):
         for s in range(nstats):
             if s == 0:  # ACORR (Anomaly Correlation)
                 # Apply Fisher z-transformation to control and model
                 # Clip to avoid log(0) or log(negative)
                 ctl_clipped = np.clip(
-                    ctl_data[:, l, s, :], -1 + 5.0e-6, 1 - 5.0e-6
+                    ctl_data[:, lead_idx, s, :], -1 + 5.0e-6, 1 - 5.0e-6
                 )
                 model_clipped = np.clip(
-                    model_data[:, l, s, :], -1 + 5.0e-6, 1 - 5.0e-6
+                    model_data[:, lead_idx, s, :], -1 + 5.0e-6, 1 - 5.0e-6
                 )
 
                 # Fisher z-transformation: z = 0.5 * ln((1+r)/(1-r))
@@ -809,20 +773,6 @@ def calc_ci(
 
                 # Calculate variance and standard error of transformed diffs
                 vard_tr = stats.tvar(diffs_tr, axis=0)
-
-                # DEBUG: Check for zero variance
-                if np.any(vard_tr == 0):
-                    zero_locs = np.where(vard_tr == 0)
-                    print(
-                        f"  WARNING: Zero variance in {coll} ACORR at lead={l}"
-                    )
-                    if is_3d[coll]:
-                        print(
-                            f"    Variable indices: {zero_locs[0]}, Level indices: {zero_locs[1]}"
-                        )
-                    else:
-                        print(f"    Variable indices: {zero_locs[0]}")
-
                 se_tr = (vard_tr / nfcsts) ** (1 / 2)
 
                 # Calculate t-critical value (two-sided)
@@ -831,14 +781,14 @@ def calc_ci(
 
                 # Back-transform CIs around control, then subtract control
                 # Inverse Fisher transform: r = (e^(2z) - 1) / (e^(2z) + 1)
-                ci_lower[l, s] = (
+                ci_lower[lead_idx, s] = (
                     (np.exp(2 * (ctl_tr_mean - dx)) - 1)
                     / (np.exp(2 * (ctl_tr_mean - dx)) + 1)
                 ) - (
                     (np.exp(2 * ctl_tr_mean) - 1)
                     / (np.exp(2 * ctl_tr_mean) + 1)
                 )
-                ci_upper[l, s] = (
+                ci_upper[lead_idx, s] = (
                     (np.exp(2 * (ctl_tr_mean + dx)) - 1)
                     / (np.exp(2 * (ctl_tr_mean + dx)) + 1)
                 ) - (
@@ -849,8 +799,8 @@ def calc_ci(
             else:  # RMS (Root Mean Square Error)
                 # Apply power transformation (square) to control and model
                 # This helps normalize the distribution of RMS values
-                ctl_tr = (ctl_data[:, l, s, :]) ** 2
-                model_tr = (model_data[:, l, s, :]) ** 2
+                ctl_tr = (ctl_data[:, lead_idx, s, :]) ** 2
+                model_tr = (model_data[:, lead_idx, s, :]) ** 2
 
                 # Calculate differences and control mean in transformed space
                 diffs_tr = model_tr - ctl_tr
@@ -858,18 +808,6 @@ def calc_ci(
 
                 # Calculate variance and standard error of transformed diffs
                 vard_tr = stats.tvar(diffs_tr, axis=0)
-
-                if np.any(vard_tr == 0):
-                    zero_locs = np.where(vard_tr == 0)
-                    print(
-                        f"  WARNING: Zero variance in {coll} RMS stat {s} at lead={l}"
-                    )
-                    if is_3d[coll]:
-                        print(
-                            f"    Variable indices: {zero_locs[0]}, Level indices: {zero_locs[1]}"
-                        )
-                    else:
-                        print(f"    Variable indices: {zero_locs[0]}")
 
                 se_tr = (vard_tr / nfcsts) ** (1 / 2)
 
@@ -879,22 +817,12 @@ def calc_ci(
 
                 # Back-transform CIs around control, then subtract control
                 # Square root to get back to RMS scale, ensure non-negative
-                ci_lower[l, s] = (np.maximum(0, ctl_tr_mean - dx)) ** (
+                ci_lower[lead_idx, s] = (np.maximum(0, ctl_tr_mean - dx)) ** (
                     1 / 2
                 ) - (np.maximum(0, ctl_tr_mean)) ** (1 / 2)
-                ci_upper[l, s] = (np.maximum(0, ctl_tr_mean + dx)) ** (
+                ci_upper[lead_idx, s] = (np.maximum(0, ctl_tr_mean + dx)) ** (
                     1 / 2
                 ) - (np.maximum(0, ctl_tr_mean)) ** (1 / 2)
-
-    # DEBUG: Check final CI outputs
-    if np.any(~np.isfinite(ci_lower)):
-        print(f"  WARNING: Non-finite CI_lower values in {coll}")
-        print(f"    NaN count: {np.sum(np.isnan(ci_lower))}")
-        print(f"    Inf count: {np.sum(np.isinf(ci_lower))}")
-    if np.any(~np.isfinite(ci_upper)):
-        print(f"  WARNING: Non-finite CI_upper values in {coll}")
-        print(f"    NaN count: {np.sum(np.isnan(ci_upper))}")
-        print(f"    Inf count: {np.sum(np.isinf(ci_upper))}")
 
     return ci_lower, ci_upper
 
@@ -992,12 +920,12 @@ def calc_syn_ci(
         )
 
     # Create CIs, looping through leads and stats
-    for l in range(nleads):
+    for lead_idx in range(nleads):
         for s in range(nstats):
             if s == 0:  # ACORR (Anomaly Correlation)
                 # Apply Fisher z-transformation to control
                 ctl_clipped = np.clip(
-                    ctl_data[:, l, s, :], -1 + 5.0e-6, 1 - 5.0e-6
+                    ctl_data[:, lead_idx, s, :], -1 + 5.0e-6, 1 - 5.0e-6
                 )
                 ctl_tr = 0.5 * np.log((1 + ctl_clipped) / (1 - ctl_clipped))
 
@@ -1011,7 +939,7 @@ def calc_syn_ci(
                     varm_tr = np.zeros((nexps - 1, nvars[coll]))
 
                 for m in range(nexps - 1):
-                    model_data = np.asarray(model_data_all[m][:, l, s, :])
+                    model_data = np.asarray(model_data_all[m][:, lead_idx, s, :])
                     # Clip and transform model data
                     model_clipped = np.clip(
                         model_data, -1 + 5.0e-6, 1 - 5.0e-6
@@ -1026,19 +954,6 @@ def calc_syn_ci(
                 varctl_tr = stats.tvar(ctl_tr)
                 var_tr = np.mean(varm_tr, axis=0)
 
-                # DEBUG: Check for zero variance
-                if np.any(var_tr == 0):
-                    zero_locs = np.where(var_tr == 0)
-                    print(
-                        f"  WARNING: Zero variance in {coll} RMS stat {s} at lead={l}"
-                    )
-                    if is_3d[coll]:
-                        print(
-                            f"    Variable indices: {zero_locs[0]}, Level indices: {zero_locs[1]}"
-                        )
-                    else:
-                        print(f"    Variable indices: {zero_locs[0]}")
-
                 # Calculate standard error from average of control/other variances
                 se_tr = ((varctl_tr + var_tr) / 2 / nfcsts) ** (1 / 2)
 
@@ -1047,14 +962,14 @@ def calc_syn_ci(
                 dx = se_tr * t_crit
 
                 # Back-transform CIs around control, then subtract control
-                ci_lower[l, s] = (
+                ci_lower[lead_idx, s] = (
                     (np.exp(2 * (ctl_tr_mean - dx)) - 1)
                     / (np.exp(2 * (ctl_tr_mean - dx)) + 1)
                 ) - (
                     (np.exp(2 * ctl_tr_mean) - 1)
                     / (np.exp(2 * ctl_tr_mean) + 1)
                 )
-                ci_upper[l, s] = (
+                ci_upper[lead_idx, s] = (
                     (np.exp(2 * (ctl_tr_mean + dx)) - 1)
                     / (np.exp(2 * (ctl_tr_mean + dx)) + 1)
                 ) - (
@@ -1064,7 +979,7 @@ def calc_syn_ci(
 
             else:  # RMS (Root Mean Square Error)
                 # Apply power transform to control
-                ctl_tr = (ctl_data[:, l, s, :]) ** 2
+                ctl_tr = (ctl_data[:, lead_idx, s, :]) ** 2
 
                 # Calculate control mean in transformed space
                 ctl_tr_mean = np.mean(ctl_tr, axis=0)
@@ -1076,26 +991,13 @@ def calc_syn_ci(
                     varm_tr = np.zeros((nexps - 1, nvars[coll]))
 
                 for m in range(nexps - 1):
-                    model_data = np.asarray(model_data_all[m][:, l, s, :])
+                    model_data = np.asarray(model_data_all[m][:, lead_idx, s, :])
                     model_tr = (model_data) ** 2
                     varm_tr[m] = stats.tvar(model_tr)
 
                 # Calculate control variance and mean of other model variances
                 varctl_tr = stats.tvar(ctl_tr)
                 var_tr = (varctl_tr + np.mean(varm_tr, axis=0)) / 2
-
-                # DEBUG: Check for zero variance
-                if np.any(var_tr == 0):
-                    zero_locs = np.where(var_tr == 0)
-                    print(
-                        f"  WARNING: Zero variance in {coll} RMS stat {s} at lead={l}"
-                    )
-                    if is_3d[coll]:
-                        print(
-                            f"    Variable indices: {zero_locs[0]}, Level indices: {zero_locs[1]}"
-                        )
-                    else:
-                        print(f"    Variable indices: {zero_locs[0]}")
 
                 # Calculate standard error
                 se_tr = (var_tr / nfcsts) ** (1 / 2)
@@ -1105,22 +1007,22 @@ def calc_syn_ci(
                 dx = se_tr * t_crit
 
                 # Back-transform CIs around control, then subtract control
-                ci_lower[l, s] = (np.maximum(0, ctl_tr_mean - dx)) ** (
+                ci_lower[lead_idx, s] = (np.maximum(0, ctl_tr_mean - dx)) ** (
                     1 / 2
                 ) - (np.maximum(0, ctl_tr_mean)) ** (1 / 2)
-                ci_upper[l, s] = (np.maximum(0, ctl_tr_mean + dx)) ** (
+                ci_upper[lead_idx, s] = (np.maximum(0, ctl_tr_mean + dx)) ** (
                     1 / 2
                 ) - (np.maximum(0, ctl_tr_mean)) ** (1 / 2)
 
             # Add CIs to control mean in original space
-            ctl_mean = np.mean(ctl_data[:, l, s, :], axis=0)
-            ci_lower[l, s] = ci_lower[l, s] + ctl_mean
-            ci_upper[l, s] = ci_upper[l, s] + ctl_mean
+            ctl_mean = np.mean(ctl_data[:, lead_idx, s, :], axis=0)
+            ci_lower[lead_idx, s] = ci_lower[lead_idx, s] + ctl_mean
+            ci_upper[lead_idx, s] = ci_upper[lead_idx, s] + ctl_mean
 
     return ci_lower, ci_upper
 
-# ================== MAIN PLOTTING DRIVERS ==================
 
+# ================== MAIN PLOTTING DRIVERS ==================
 def get_season(data_dict):
     date_names = data_dict["date_nms"]
 
@@ -1140,10 +1042,10 @@ def create_regional_plots(
     vars_to_plot: List[str] = None,
     levels_to_plot: List[int] = None,
     leads_to_plot: List[int] = None,
-    regions_to_plot: List[str] = None,
+    regions_to_plot: List[str] = ["NHE", "SHE", "TRO"],
     exps_to_comp: List[List[int]] = [[1, 0]],
     limit_percentiles: List[int] = [75, 75, 75],
-    stats_to_plot: List[int] = None,
+    stats_to_plot: List[int] = [0, 1],
     plots_dir="outputs",
 ) -> None:
     """
@@ -1160,7 +1062,6 @@ def create_regional_plots(
     """
 
     start_time = time.perf_counter()
-    print("\n=== Running Plot Mode ===\n")
 
     # Discover available experiments from data_dict structure
     available_exps = discover_experiments(data_dict)
@@ -1170,9 +1071,6 @@ def create_regional_plots(
         raise ValueError(
             "Control experiment (index 0) must be present in data_dict"
         )
-
-    # Get comparison experiments (all except control)
-    comparison_exps = [exp for exp in available_exps if exp != 0]
 
     # Extract metadata from data_dict dict
     date_nms = data_dict["date_nms"]
@@ -1192,11 +1090,24 @@ def create_regional_plots(
     regions = data_dict["regions"]
     # plot_RMS_decomp = data_dict.get("plot_RMS_decomp", True)
     nstats = len(data_dict["plot_stats"])
+    dpi = data_dict["plot_dpi"]
+
+    # Create model names dict (keyed by experiment index)
+    models = {}
+    for exp_idx in available_exps:
+        models[exp_idx] = (
+            f'{data_dict["fcst_names"][exp_idx]}_{data_dict["ana_names"][exp_idx]}'
+        )
+
+    # We only want to plot GEOS-FP and FM
+    plotting_exps = [0, 3]
+
+    # Get comparison experiments (all except control)
+    comparison_exps = [exp for exp in plotting_exps if exp != 0]
 
     # Apply filtering to regions, variables, leads, stats so plots are accurate
     if regions_to_plot is not None:
         regions = [reg for reg in regions if reg in regions_to_plot]
-        print(f"Filtered regions: {regions}.")
 
     if vars_to_plot is not None:  # Filter vars, collections, nvars
         fvars = {
@@ -1205,14 +1116,11 @@ def create_regional_plots(
         }
         # Filter out collections with no variables left
         collections = [coll for coll in collections if len(fvars[coll]) > 0]
-        print(f"Active collections after filtering: {collections}")
 
         # Update nvars for remaining collections
         nvars = {coll: len(fvars[coll]) for coll in collections}
-        print(f"Filtered variables: {vars_to_plot}")
 
     if leads_to_plot is not None:
-        print(f"Filtering lead times to: {leads_to_plot}")
         lead_indices = [
             idx
             for idx, lead in enumerate(data_dict["leads"])
@@ -1227,9 +1135,6 @@ def create_regional_plots(
 
     if stats_to_plot is not None:
         nstats = len(stats_to_plot)
-        print(
-            f"Filtering statistics to first {nstats} (indices: {stats_to_plot})"
-        )
     else:
         stats_to_plot = list(range(nstats))  # Use all stats
 
@@ -1237,17 +1142,7 @@ def create_regional_plots(
     x_vals = [x / 24 for x in leads]
     xloc = x_vals[-1] + (x_vals[-1] * 0.05)
     season = data_dict["season"]
-    year = data_dict["year"]
     seas_yr = get_season(data_dict)
-
-    # Create model names dict (keyed by experiment index)
-    models = {}
-    for exp_idx in available_exps:
-        models[exp_idx] = (
-            f'{data_dict["fcst_names"][exp_idx]}_{data_dict["ana_names"][exp_idx]}'
-        )
-
-    print(f"Models: {models}")
 
     # Collect variable metadata
     title, long = {}, {}
@@ -1277,13 +1172,6 @@ def create_regional_plots(
     regional_subdir = plots_dir / "regional"
     regional_subdir.mkdir(exist_ok=True, parents=True)
 
-    # Create corcmp.rc file in plots directory (loop over discovered experiments)
-    dpi = data_dict["plot_dpi"]
-    with open(regional_subdir / "corcmp.rc", "w") as f:
-        for exp_idx in available_exps:
-            f.write(f'DSC{exp_idx}: {models[exp_idx].replace("_", "-")}\n')
-    print("Created corcmp.rc\n")
-
     # ========== MAIN PLOTTING LOOP: Loop over regions ==========
     all_region_times = []
     for reg in regions:
@@ -1308,8 +1196,6 @@ def create_regional_plots(
             conf_levels=[0.68, 0.90, 0.95, 0.99, 0.9999],
         )
 
-        print(f"Here are the keys of ci_l: {list(ci_l.keys())}")
-
         # Calculate synoptic CIs for full experiment list
         # Synoptic CI is stored per collection, per experiment
         ci_syn_l, ci_syn_u = calc_reg_syn_ci(
@@ -1325,9 +1211,6 @@ def create_regional_plots(
             nfcsts,
             conf_level=0.95,
         )
-
-        print(f"Here are the keys of ci_syn_l: {list(ci_syn_l.keys())}")
-
         # Now that we have our diff and synoptic CI values, plot levels
         for coll in collections:
             if is_3d[coll]:
@@ -1340,6 +1223,7 @@ def create_regional_plots(
                     levs,
                     available_exps,  # Changed: pass discovered experiments
                     comparison_exps,  # Changed: pass comparison experiments
+                    plotting_exps,
                     data_dict,
                     models,
                     colors,
@@ -1374,18 +1258,56 @@ def create_regional_plots(
                     lead_indices,
                 )
             else:
-                print("2D collections not supported.")
-                continue
-        region_end_time = time.perf_counter()
-        region_time = round(region_end_time - region_start_time, 3)
-        all_region_times.append(region_time)
+                # Plot 2D variables (no level iteration needed)
+                for v, var in enumerate(fvars[coll]):
+                    if vars_to_plot and var not in vars_to_plot:
+                        continue
 
-    print("\n=== Plot Mode Complete ===\n")
-    avg_time = sum(all_region_times) / len(all_region_times)
-    end_time = time.perf_counter()
-    print(f"Average time per region: {avg_time:.3f} sec")
-    print(
-        "Min, max times per region: "
-        f"{min(all_region_times), max(all_region_times)}"
-    )
-    print(f"Overall time: {round(end_time - start_time, 3)} sec")
+                    print(f"\nMaking plot for {var} (2D) {reg}")
+
+                    # Call plot_level once (no level loop for 2D)
+                    plot_level(
+                        stats_to_plot,     # nstats parameter (list of idx)
+                        reg,
+                        coll,
+                        v,
+                        var,
+                        0,                 # lvl_idx (dummy for 2D)
+                        0,                 # lev (dummy for 2D)
+                        data_dict,
+                        nfcsts,
+                        fcst_interval,
+                        fcst_length,
+                        models,
+                        available_exps,
+                        plotting_exps,
+                        colors,
+                        stat_lbls,
+                        stat_outnms,
+                        vars_unit_map,
+                        vars_long_map,
+                        region_long_map,
+                        is_3d,
+                        x_vals,
+                        xloc,
+                        seas_yr,
+                        season,
+                        ci_l,
+                        ci_u,
+                        ci_syn_l,
+                        ci_syn_u,
+                        [0.68, 0.90, 0.95, 0.99, 0.9999],
+                        nleads_filtered,
+                        region_dir,
+                        dpi,
+                        title,
+                        long,
+                        lead_indices,
+                    )
+                    plt.close("all")
+
+    print(f'\n{"="*60}')
+    print(f"PLOTTING COMPLETE!")
+    print(f'{"="*60}')
+    print(f"Plots saved to: {regional_subdir}")
+    print(f"\nAll finished! :)\n")

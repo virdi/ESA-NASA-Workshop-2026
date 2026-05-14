@@ -8,12 +8,16 @@ import xarray as xr
 import yaml
 import sys
 
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='fsspec')
+from tqdm import tqdm
+
 # ========================================================================
 # CONSTANTS
 # ========================================================================
 
 COLLECTION_VARIABLES = {
-    "de3d": ["H", "Q", "T", "U", "V"],
+    "de3d": ["H", "Q", "T", "U", "V", "Z"],
     "de2d": ["P", "PS"],
     "sl2d": ["Q2M", "T2M", "U10M", "V10M", "D2M"],
     "ae2d": ["AOD", "LOGAOD", "PM25"],
@@ -123,11 +127,6 @@ def merge_experiment_files(
         'regional' - skip _avg variables, no weighted averaging
         'global' - weighted averaging for _avg and _glo variables
     """
-    if len(filename_list) == 1:
-        print(f"Loading single file for {exp_name}...")
-    else:
-        print(f"Merging {len(filename_list)} files for {exp_name}...")
-        print(f"Filename list: \n{filename_list}")
 
     if merge_mode not in ["regional", "global"]:
         raise ValueError(
@@ -236,18 +235,6 @@ def merge_experiment_files(
         .astype(datetime)
         .strftime("%Y%m%d_%H")
     )
-    if len(datasets) > 1:
-        print(
-            f"Merged dataset: {len(final_dates)} init dates from "
-            f"{first_date} to {last_date}"
-        )
-        if merge_mode == "global":
-            print(f"Averaged variables weighted by date counts: {date_counts}")
-    else:
-        print(
-            f"Dataset contains {len(final_dates)} init dates from "
-            f"{first_date} to {last_date}"
-        )
 
     return merged_ds, experiment_excluded_dates, files_with_exclusions
 
@@ -542,11 +529,10 @@ def _filter_arrays_to_common_dates(
     )
 
     if all_same:
-        print("✓ All experiments have identical dates - no filtering needed")
         return data, common_dates
 
     # Need to filter - experiments have different dates
-    print(f"⚠ Filtering arrays to {len(common_dates)} common dates...")
+    print(f"Filtering arrays to {len(common_dates)} common dates...")
 
     for coll in collections:
         n_experiments = len(experiment_valid_dates)
@@ -629,7 +615,7 @@ def _validate_identical_levels(datasets):
     return ref_levels
 
 
-def _find_common_leads(datasets, verbose=True):
+def _find_common_leads(datasets, verbose=False):
     """Find lead times present in ALL datasets (intersection)
 
     Returns:
@@ -1130,8 +1116,8 @@ def _load_global_raw_variables(
 
 def load_regional_stats_data(
     stats_nc_filenames: Union[str, List[str], List[List[str]]],
-    plot_RMS_decomp: bool = True,
-    verbose: bool = True,
+    plot_RMS_decomp: bool = False,
+    verbose: bool = False,
     # Optional metadata for plotting
     season: str = "",
     year: int = 0,
@@ -1150,14 +1136,7 @@ def load_regional_stats_data(
 
     Returns dictionary containing statistics data and configuration.
     """
-    # DEBUG: print stats filenames
     print("Starting loading of regional stat data from netcdf...")
-    if isinstance(stats_nc_filenames, list):
-        print(f"Found {len(stats_nc_filenames)} experiment files")
-        print(stats_nc_filenames)
-    else:
-        print(f"Loading from single experiment file.")
-        print(stats_nc_filenames)
 
     # Define collections
     collections = list(COLLECTION_VARIABLES.keys())
@@ -1178,7 +1157,10 @@ def load_regional_stats_data(
     exp_excluded_dates = []
     exp_valid_dates = []
 
-    for exp_idx, file_list in enumerate(exp_file_lists):
+    pbar = tqdm(
+        enumerate(exp_file_lists), desc="Merging experiments...", total=len(exp_file_lists)
+    )
+    for exp_idx, file_list in pbar:
         merged_ds, excluded_dates, n_excl = merge_experiment_files(
             file_list, f"exp{exp_idx}"
         )
@@ -1201,7 +1183,7 @@ def load_regional_stats_data(
     if verbose:
         for exp_idx, (fcst, ana, clim) in enumerate(
             zip(fcst_names, ana_names, clim_names)
-        ):  # ✅ Fixed
+        ):  
             print(f"  Experiment {exp_idx}: {fcst}(F) / {ana}(A) / {clim}(C)")
 
     # ========================================================================
@@ -1272,9 +1254,6 @@ def load_regional_stats_data(
         merged_datasets, verbose=verbose
     )
     regions = _validate_regional_spatial_coords(merged_datasets)
-    # # ✅ Extract leads and levels here
-    # leads = [int(x) for x in common_coords["lead"]]
-    # levels = [int(x) for x in common_coords["lev"]]
 
     # ========================================================================
     # STEP 6: Load data into arrays
@@ -1283,7 +1262,12 @@ def load_regional_stats_data(
     for coll in collections:
         data["raw"][coll] = {}
 
-    for exp_idx, ds in enumerate(merged_datasets):
+
+    
+    pbar = tqdm(
+        enumerate(merged_datasets), desc="Loading data...", total=len(merged_datasets)
+    )
+    for exp_idx, ds in pbar:
         exp_data = _load_experiment_data(
             ds,
             collections,
@@ -1342,6 +1326,11 @@ def load_regional_stats_data(
     # ========================================================================
     # RETURN: All variables now properly defined
     # ========================================================================
+    print(
+        f"\n✓ Loading complete: {n_experiments} experiments, "
+        f"{len(final_common_dates)} dates"
+    )
+    
     return {
         "raw": data["raw"],  # Whole point of the function!
         "avg": data["avg"],  # Whole point of the function!
@@ -1368,9 +1357,9 @@ def load_regional_stats_data(
 
 def load_global_stats_data(
     stats_nc_filenames: Union[str, List[str], List[List[str]]],
-    process: str = "indiv",
-    load_raw: bool = False,
-    verbose: bool = True,
+    process: str = "comp",
+    load_raw: bool = True,
+    verbose: bool = False,
     # Optional metadata (no longer from YAML)
     season: str = "",
     year: int = 0,
@@ -1438,7 +1427,10 @@ def load_global_stats_data(
     exp_excluded_dates = []
     exp_valid_dates = []
 
-    for exp_idx, file_list in enumerate(exp_file_lists):
+    pbar = tqdm(
+        enumerate(exp_file_lists), desc="Merging experiments...", total=len(exp_file_lists)
+    )
+    for exp_idx, file_list in pbar:
         if verbose:
             print(f"\n--- Experiment {exp_idx} ---")
 
@@ -1605,7 +1597,10 @@ def load_global_stats_data(
     n_lats = len(lats)
     n_lons = len(lons)
 
-    for exp_idx, ds in enumerate(merged_datasets):
+    pbar = tqdm(
+        enumerate(merged_datasets), desc="Loading data...", total=len(merged_datasets)
+    )
+    for exp_idx, ds in pbar:
         if verbose:
             print(f"  Loading exp{exp_idx}...")
 
@@ -1675,11 +1670,11 @@ def load_global_stats_data(
     for ds in merged_datasets:
         ds.close()
 
-    if verbose:
-        print(
-            f"\n✓ Loading complete: {n_experiments} experiments, "
-            f"{len(date_nms)} dates, {process} process"
-        )
+    
+    print(
+        f"\n✓ Loading complete: {n_experiments} experiments, "
+        f"{len(date_nms)} dates"
+    )
 
     # ========================================================================
     # RETURN: Data dictionary
