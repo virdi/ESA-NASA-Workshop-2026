@@ -51,11 +51,16 @@ You end up with a `.bin` file vLLM can load.
 
 ## Step 3: Run the model with vLLM
 
+Move back in the Part2 directory
+```
+cd ..
+```
+
 With `config.json` and the `.bin` file in place, start the server:
 
 ```bash
-cd ..
-vllm serve 1_run_model_in_vllm \
+
+Part2$  vllm serve 1_run_model_in_vllm \
    --skip-tokenizer-init \
    --enable-mm-embeds \
    --max-num-seqs 32 \

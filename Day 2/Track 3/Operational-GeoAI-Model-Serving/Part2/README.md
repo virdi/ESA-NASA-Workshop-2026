@@ -24,6 +24,15 @@ Now that there's a server, push some load at it. Two tools, two different questi
 
 The point is to learn the different tools available to benchmark EO models.
 
+### [Step 3: (Bonus) Custom IOProcessor](./3_terratorch-mask-closing-processor/README.md)
+
+vLLM speaks tensors-in / tensors-out. Real geospatial users send GeoTIFFs and expect GeoTIFFs back. The IOProcessor is the adapter that sits between the two. This step walks through a small custom processor that fills the gaps in the inference mask:
+- How a custom IOProcessor is structured
+- How to register it with vLLM via Python entry points
+- How to thread per-request state through the parent's pipeline without re-implementing it
+
+You come out with an installable `mask_closing` package, auto-registered with vLLM.
+
 
 ## Prerequisites
 

@@ -17,7 +17,7 @@ cd 2_vllm_benchmarking
 
 ```bash
 
-vllm bench serve \
+2_vllm_benchmarking$  vllm bench serve \
   --base-url http://localhost:8000 \
   --dataset-name=custom \
   --model 1_run_model_in_vllm \
@@ -45,7 +45,7 @@ Strengths: nothing extra to install, and the metric definitions match what the v
 [`guidellm`](https://github.com/vllm-project/guidellm) is a standalone benchmarking tool that focuses on **load-curve sweeps** — running the same workload at progressively higher rates to find the saturation point of the server, not just measure a single rate.
 
 ```bash
-guidellm benchmark \
+2_vllm_benchmarking$  guidellm benchmark \
   --target http://localhost:8000 \
   --backend openai_http \
   --model 1_run_model_in_vllm \
