@@ -20,7 +20,13 @@ dependencies = [
 [dependency-groups]
 dev = [
     "jupyter>=1.1.1",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.uv]
 # akd-ext pins fastmcp<3.2.4 but pydantic-ai>=1.94.0 needs fastmcp>=3.2.4.
