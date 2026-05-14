@@ -22,15 +22,17 @@ This registers `mask_closing` as a vLLM I/O processor plugin. No code changes to
 
 ## 2. Download sample and start vLLM with the plugin
 
-Stop any running vLLM server, then restart it pointing at the new plugin:
+Stop any running vLLM server, then restart it pointing at the new plugin.
+
+From the `Part2` directorty run:
 
 ```bash
 
-Part2$ hf download mgazz/prithvi-eo-burnscars park_fire_scaled.tif --local-dir ./samples/
+hf download mgazz/prithvi-eo-burnscars park_fire_scaled.tif --local-dir ./samples/
 ```
 
 ```bash
-Part2$ vllm serve mgazz/prithvi-eo-burnscars \
+vllm serve mgazz/prithvi-eo-burnscars \
     --skip-tokenizer-init \
     --enable-mm-embeds \
     --io-processor-plugin mask_closing \

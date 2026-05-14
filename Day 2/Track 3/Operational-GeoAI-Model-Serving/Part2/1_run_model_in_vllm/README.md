@@ -56,11 +56,13 @@ Move back in the Part2 directory
 cd ..
 ```
 
-With `config.json` and the `.bin` file in place, start the server:
+With `config.json` and the `.bin` file in place, start the server.
+
+From the `Part2` directory run: 
 
 ```bash
 
-Part2$  vllm serve 1_run_model_in_vllm \
+vllm serve 1_run_model_in_vllm \
    --skip-tokenizer-init \
    --enable-mm-embeds \
    --max-num-seqs 32 \
