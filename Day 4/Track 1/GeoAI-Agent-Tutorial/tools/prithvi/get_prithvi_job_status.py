@@ -1,36 +1,50 @@
-from urllib.parse import urlparse
+import asyncio
+import os
 
-import boto3
-from botocore.exceptions import ClientError
+import requests
+from akd._base import InputSchema, OutputSchema
+from akd.tools import BaseTool
+from akd_ext.mcp import mcp_tool
+from pydantic import ConfigDict, Field
+
+PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8000")
 
 
-def get_prithvi_job_status(job_id: str) -> dict:
+class GetPrithviJobStatusInput(InputSchema):
+    """Parameters for Prithvi job status poll."""
+    job_id: str = Field(..., description="Job ID returned by run_prithvi_inference")
+
+
+class GetPrithviJobStatusOutput(OutputSchema):
+    """Current status of a Prithvi inference job."""
+    model_config = ConfigDict(extra="ignore")
+    status: str = Field(default="", description="'running' | 'finished' | 'failed'")
+    message: str = Field(default="")
+
+
+def _get_prithvi_job_status(job_id: str) -> dict:
+    try:
+        resp = requests.get(
+            f"{PRITHVI_SERVER_URL}/status/{job_id}",
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        return {"status": "failed", "message": f"Status check failed: {e}"}
+
+
+@mcp_tool
+class GetPrithviJobStatusTool(BaseTool[GetPrithviJobStatusInput, GetPrithviJobStatusOutput]):
     """Check the status of a submitted Prithvi inference job.
 
-    job_id is the S3 OutputLocation returned by run_prithvi_inference.
     Returns status: 'running' | 'finished' | 'failed'.
-
-    SageMaker Async Inference writes the result JSON to OutputLocation on
-    success, and a .error file to OutputLocation + '.error' on failure.
+    Call after run_prithvi_inference; poll until finished before calling get_prithvi_results.
     """
-    parsed = urlparse(job_id)
-    bucket = parsed.netloc
-    key = parsed.path.lstrip("/")
 
-    s3 = boto3.client("s3")
+    input_schema = GetPrithviJobStatusInput
+    output_schema = GetPrithviJobStatusOutput
 
-    try:
-        s3.head_object(Bucket=bucket, Key=key)
-        return {"status": "finished", "message": "Results are ready."}
-    except ClientError as e:
-        if e.response["Error"]["Code"] != "404":
-            return {"status": "failed", "message": f"S3 error: {e}"}
-
-    # SageMaker writes a .error file when the invocation fails
-    try:
-        s3.head_object(Bucket=bucket, Key=key + ".error")
-        return {"status": "failed", "message": "Inference job failed on the endpoint."}
-    except ClientError:
-        pass
-
-    return {"status": "running", "message": "Job is still processing."}
+    async def _arun(self, params: GetPrithviJobStatusInput) -> GetPrithviJobStatusOutput:
+        result = await asyncio.to_thread(_get_prithvi_job_status, params.job_id)
+        return GetPrithviJobStatusOutput.model_validate(result)

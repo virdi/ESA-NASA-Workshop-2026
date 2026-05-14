@@ -1,26 +1,45 @@
+import asyncio
 import os
 from io import StringIO
 
 import pandas as pd
 import requests
+from akd._base import InputSchema, OutputSchema
+from akd.tools import BaseTool
+from akd_ext.mcp import mcp_tool
+from pydantic import ConfigDict, Field
 
 FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
 
 
-def query_active_fires(bbox: list[float], start_date: str, end_date: str) -> dict:
+class QueryActiveFiresInput(InputSchema):
+    """Parameters for FIRMS active-fire query."""
+    bbox: list[float] = Field(..., description="[west, south, east, north]")
+    start_date: str = Field(..., description="YYYY-MM-DD")
+    end_date: str = Field(..., description="YYYY-MM-DD")
+
+
+class QueryActiveFiresOutput(OutputSchema):
+    """Active-fire detection summary from FIRMS VIIRS."""
+    model_config = ConfigDict(extra="ignore")
+    detections: bool = Field(default=False)
+    count: int = Field(default=0)
+    total_detections: int | None = None
+    date_range: list | None = None
+    message: str = Field(default="")
+
+
+def _query_active_fires(bbox: list[float], start_date: str, end_date: str) -> dict:
     """Query FIRMS VIIRS_SNPP_NRT for high-confidence fire detections.
 
-    bbox: [west, south, east, north]
-    Signal rule (from reasoning.md): confidence == 'high' (VIIRS string field).
-    FIRMS NRT covers ~3 months. For older events use the FIRMS archive API.
-    Requires FIRMS_MAP_KEY env var (free from firms.modaps.eosdis.nasa.gov/api/).
+    Signal rule: confidence == 'high' (VIIRS string field).
+    FIRMS NRT covers ~3 months. Requires FIRMS_MAP_KEY env var.
     """
     map_key = os.environ.get("FIRMS_MAP_KEY")
     if not map_key:
         return {"detections": False, "count": 0, "message": "FIRMS_MAP_KEY env var not set."}
 
     bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-    # FIRMS area API: max 10-day window per request; use start_date as anchor
     url = f"{FIRMS_BASE}/{map_key}/VIIRS_SNPP_NRT/{bbox_str}/10/{start_date}"
 
     try:
@@ -37,8 +56,6 @@ def query_active_fires(bbox: list[float], start_date: str, end_date: str) -> dic
 
     df["acq_date"] = pd.to_datetime(df["acq_date"])
     df = df[(df["acq_date"] >= start_date) & (df["acq_date"] <= end_date)]
-
-    # VIIRS confidence is a string: 'low' | 'nominal' | 'high'
     high_conf = df[df["confidence"] == "high"]
 
     return {
@@ -55,3 +72,21 @@ def query_active_fires(bbox: list[float], start_date: str, end_date: str) -> dic
             else "No high-confidence fire detections."
         ),
     }
+
+
+@mcp_tool
+class QueryActiveFiresTool(BaseTool[QueryActiveFiresInput, QueryActiveFiresOutput]):
+    """Query FIRMS VIIRS_SNPP_NRT for high-confidence fire detections within a bbox and date range.
+
+    Use when the user request is about fire/burn and the agent needs evidence of
+    recent fire activity. FIRMS NRT covers ~3 months; for older events use query_fire_history.
+    """
+
+    input_schema = QueryActiveFiresInput
+    output_schema = QueryActiveFiresOutput
+
+    async def _arun(self, params: QueryActiveFiresInput) -> QueryActiveFiresOutput:
+        result = await asyncio.to_thread(
+            _query_active_fires, params.bbox, params.start_date, params.end_date
+        )
+        return QueryActiveFiresOutput.model_validate(result)

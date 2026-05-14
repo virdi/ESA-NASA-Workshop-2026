@@ -1,10 +1,14 @@
+import asyncio
 from datetime import datetime
 
 import requests
+from akd._base import InputSchema, OutputSchema
+from akd.tools import BaseTool
+from akd_ext.mcp import mcp_tool
+from pydantic import ConfigDict, Field
 
 CROPSCAPE_URL = "https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLStat"
 
-# USDA CDL crop class codes (major cropland categories; see NASS CDL documentation)
 CROPLAND_CLASS_CODES = {
     1, 2, 3, 4, 5, 6, 10, 11, 12, 13, 14, 21, 22, 23, 24, 25, 26, 27,
     28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45,
@@ -13,11 +17,26 @@ CROPLAND_CLASS_CODES = {
 }
 
 
-def query_crop_landcover(bbox: list[float], year: int | None = None) -> dict:
+class QueryCropLandcoverInput(InputSchema):
+    """Parameters for USDA CDL crop-landcover query."""
+    bbox: list[float] = Field(..., description="[west, south, east, north]")
+    year: int | None = Field(default=None, description="CDL year to query (defaults to last year)")
+
+
+class QueryCropLandcoverOutput(OutputSchema):
+    """CDL crop/landcover class distribution summary."""
+    model_config = ConfigDict(extra="ignore")
+    year: int | None = None
+    crop_fraction: float | None = None
+    strong_agriculture_signal: bool | None = None
+    top_classes: list[dict] | None = None
+    message: str = Field(default="")
+
+
+def _query_crop_landcover(bbox: list[float], year: int | None) -> dict:
     """Query USDA CDL for crop/landcover class distribution in a bbox.
 
-    bbox: [west, south, east, north]
-    Signal rule (from reasoning.md): strong agriculture signal if crop_fraction > 0.30.
+    Signal rule: strong agriculture signal if crop_fraction > 0.30.
     CDL covers CONUS only and typically lags ~1 year.
     """
     if year is None:
@@ -38,7 +57,6 @@ def query_crop_landcover(bbox: list[float], year: int | None = None) -> dict:
     except ValueError as e:
         return {"message": f"CropScape response parse error: {e}"}
 
-    # Response schema varies slightly by endpoint version; try both paths
     classes = (
         data.get("categoricalStatistics", {}).get("classStatistics", [])
         or data.get("data", {}).get("classStatistics", [])
@@ -57,7 +75,6 @@ def query_crop_landcover(bbox: list[float], year: int | None = None) -> dict:
         if int(c.get("classCode", 0)) in CROPLAND_CLASS_CODES
     )
     crop_fraction = crop_area / total_area
-
     top_classes = sorted(classes, key=lambda x: -float(x.get("area", 0)))[:5]
 
     return {
@@ -74,3 +91,19 @@ def query_crop_landcover(bbox: list[float], year: int | None = None) -> dict:
         ],
         "message": f"{crop_fraction:.0%} of bbox is cropland (CDL {year}).",
     }
+
+
+@mcp_tool
+class QueryCropLandcoverTool(BaseTool[QueryCropLandcoverInput, QueryCropLandcoverOutput]):
+    """Query USDA CDL to summarize dominant crop/landcover classes within a bbox.
+
+    Use when the user request is about crop classification, or when the agent needs
+    to gauge whether an AOI is agricultural. CDL covers CONUS only.
+    """
+
+    input_schema = QueryCropLandcoverInput
+    output_schema = QueryCropLandcoverOutput
+
+    async def _arun(self, params: QueryCropLandcoverInput) -> QueryCropLandcoverOutput:
+        result = await asyncio.to_thread(_query_crop_landcover, params.bbox, params.year)
+        return QueryCropLandcoverOutput.model_validate(result)

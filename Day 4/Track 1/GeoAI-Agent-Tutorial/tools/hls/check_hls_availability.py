@@ -1,34 +1,60 @@
+import asyncio
 from datetime import datetime, timedelta
 
 import earthaccess
+from akd._base import InputSchema, OutputSchema
+from akd.tools import BaseTool
+from akd_ext.mcp import mcp_tool
+from pydantic import ConfigDict, Field
 from pystac_client import Client
 
 LPCLOUD_URL = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
 HLS_COLLECTIONS = ["HLSS30.v2.0", "HLSL30.v2.0"]
 
 
-def check_hls_availability(
+class CheckHLSAvailabilityInput(InputSchema):
+    """Parameters for HLS imagery availability check."""
+    bbox: list[float] = Field(..., description="[west, south, east, north]")
+    task_type: str = Field(..., description="'flood' | 'burn' | 'crop'")
+    date: str | None = Field(
+        default=None,
+        description="Target date YYYY-MM-DD (required for flood/burn; ignored for crop)",
+    )
+    date_range: dict | None = Field(
+        default=None,
+        description="{'start_date': 'YYYY-MM-DD', 'end_date': 'YYYY-MM-DD'} (crop only)",
+    )
+
+
+class CheckHLSAvailabilityOutput(OutputSchema):
+    """HLS imagery availability result with selected date(s) and quality metrics."""
+    model_config = ConfigDict(extra="ignore")
+    available: bool = Field(default=False)
+    selected_date: str | None = None
+    collection: str | None = None
+    clear_pct: float | None = None
+    offset_days: int | None = None
+    crop_dates: list[str] | None = None
+    clear_pcts: list[float] | None = None
+    collections: list[str] | None = None
+    relaxed_thresholds: bool | None = None
+    alternatives: list[dict] | None = None
+    message: str = Field(default="")
+
+
+def _check_hls_availability(
     bbox: list[float],
-    date: str,
+    date: str | None,
     task_type: str,
-    date_range: dict | None = None,
+    date_range: dict | None,
 ) -> dict:
     """Check HLS imagery availability for a bbox and task.
 
-    bbox: [west, south, east, north]
-    task_type: 'flood' | 'burn' | 'crop'
-    date_range: {'start_date': 'YYYY-MM-DD', 'end_date': 'YYYY-MM-DD'} (crop only)
-
-    Search windows per reasoning.md:
-      flood: exact date ± 3 days, best clear_pct wins
-      burn:  requested date through +30 days
-      crop:  3 clean dates with ≥70-day gaps inside date_range (relaxes to 50/50 if needed)
-
-    clear_pct derived from eo:cloud_cover metadata (proxy for Fmask; see hls_conventions.md).
-    Requires Earthdata credentials in ~/.netrc.
+    Search windows: flood ±3 days, burn +30 days, crop 3 clean dates ≥70-day gaps.
+    Requires Earthdata credentials via environment variables.
     """
     try:
-        earthaccess.login(strategy="netrc")
+        earthaccess.login(strategy="environment")
     except Exception as e:
         return {"available": False, "message": f"Earthdata auth failed: {e}"}
 
@@ -88,14 +114,15 @@ def _check_single_date(catalog, bbox: list, date: str, task_type: str) -> dict:
                 alternatives.append(entry)
 
     if not best:
-        return {
-            "available": False,
-            "message": "No HLS imagery found in the search window.",
-        }
+        return {"available": False, "message": "No HLS imagery found in the search window."}
 
+    # Rename 'date' → 'selected_date' for the top-level result
     return {
         "available": True,
-        **best,
+        "selected_date": best["date"],
+        "collection": best["collection"],
+        "clear_pct": best["clear_pct"],
+        "offset_days": best["offset_days"],
         "alternatives": alternatives[:3],
         "message": "ok",
     }
@@ -124,17 +151,14 @@ def _check_crop_dates(catalog, bbox: list, date_range: dict) -> dict:
                 continue
             cloud_cover = item.properties.get("eo:cloud_cover", 100)
             clear_pct = round(100.0 - float(cloud_cover), 1)
-            all_scenes.append(
-                {
-                    "date": item.datetime.date(),
-                    "clear_pct": clear_pct,
-                    "collection": collection.split(".")[0],
-                }
-            )
+            all_scenes.append({
+                "date": item.datetime.date(),
+                "clear_pct": clear_pct,
+                "collection": collection.split(".")[0],
+            })
 
     all_scenes.sort(key=lambda x: x["date"])
 
-    # Try strict thresholds first (70% clear, 70-day gap), then relax to 50/50
     for min_clear, min_gap in [(70, 70), (50, 50)]:
         clean = [s for s in all_scenes if s["clear_pct"] >= min_clear]
         selected = _pick_three_with_gaps(clean, min_gap)
@@ -156,10 +180,32 @@ def _check_crop_dates(catalog, bbox: list, date_range: dict) -> dict:
 
 def _pick_three_with_gaps(scenes: list, min_gap_days: int) -> list:
     for i, s1 in enumerate(scenes):
-        for j, s2 in enumerate(scenes[i + 1 :], i + 1):
+        for j, s2 in enumerate(scenes[i + 1:], i + 1):
             if (s2["date"] - s1["date"]).days < min_gap_days:
                 continue
-            for s3 in scenes[j + 1 :]:
+            for s3 in scenes[j + 1:]:
                 if (s3["date"] - s2["date"]).days >= min_gap_days:
                     return [s1, s2, s3]
     return None
+
+
+@mcp_tool
+class CheckHLSAvailabilityTool(BaseTool[CheckHLSAvailabilityInput, CheckHLSAvailabilityOutput]):
+    """Check whether usable HLS imagery exists for a given AOI, date, and task type.
+
+    Returns selected acquisition date(s), sensor collection, and quality metrics.
+    Call after geocode_location and before run_prithvi_inference.
+    """
+
+    input_schema = CheckHLSAvailabilityInput
+    output_schema = CheckHLSAvailabilityOutput
+
+    async def _arun(self, params: CheckHLSAvailabilityInput) -> CheckHLSAvailabilityOutput:
+        result = await asyncio.to_thread(
+            _check_hls_availability,
+            params.bbox,
+            params.date,
+            params.task_type,
+            params.date_range,
+        )
+        return CheckHLSAvailabilityOutput.model_validate(result)

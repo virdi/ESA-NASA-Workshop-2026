@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.34.0",
+    "akd-ext @ git+https://github.com/nasa-impact/akd-ext.git@develop",
     "earthaccess>=0.12.0",
     "gradio>=6.14.0",
     "pandas>=2.0.0",
@@ -19,5 +19,15 @@ dependencies = [
 [dependency-groups]
 dev = [
     "jupyter>=1.1.1",
-    "sagemaker>=2.200.0",
+]
+
+[tool.uv]
+# akd-ext pins fastmcp<3.2.4 but pydantic-ai>=1.94.0 needs fastmcp>=3.2.4.
+# We override to allow the newer fastmcp. akd-ext's MCP server (fastmcp usage)
+# is not used in this project — only BaseTool and PydanticAIBaseAgent are needed.
+override-dependencies = [
+    "fastmcp>=3.2.4",
+    # wrapt>=1.14 is required for Python 3.12+ (formatargspec was removed).
+    # A transitive dep pulled in 1.12.1; this forces the compatible version.
+    "wrapt>=1.14",
 ]

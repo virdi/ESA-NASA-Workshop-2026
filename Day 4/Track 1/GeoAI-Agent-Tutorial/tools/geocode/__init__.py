@@ -1,3 +1,3 @@
-from .geocode_location import geocode_location
+from .geocode_location import GeoCodeLocationTool
 
-__all__ = ["geocode_location"]
+__all__ = ["GeoCodeLocationTool"]
