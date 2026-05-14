@@ -1,6 +1,6 @@
 # Geospatial Model Deployment with vLLM
 
-This is one session of the NASA workshop. It walks through serving TerraTorch / Prithvi geospatial foundation models with vLLM, end to end: from raw training artifacts on disk to a running server you can benchmark. 
+This project walks through serving TerraTorch geospatial foundation models with vLLM, end to end: from raw training artifacts on disk to a running server you can benchmark. 
 
 ## Session Structure
 
@@ -10,8 +10,8 @@ Three steps.
 
 Take a TerraTorch model, make it loadable by vLLM, and serve it:
 - Convert a TerraTorch YAML configuration into a vLLM-compatible `config.json`
-- Convert a PyTorch Lightning checkpoint (`.ckpt`) into a standard PyTorch binary (`.bin`)
-- Start a vLLM server with the Prithvi flood-segmentation model and run inference from a notebook
+- Prepare the checkpoint (`.ckpt`) for vLLM creating a minimal PyTorch binary (`.bin`)
+- Start a vLLM server with the model and run inference from a notebook
 
 You come out the other side with a `config.json`, a `.bin` weights file, and a running vLLM server returning segmentation masks.
 
