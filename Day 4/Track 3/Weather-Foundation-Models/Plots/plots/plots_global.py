@@ -461,6 +461,7 @@ def create_filled_colorbar(
                 cax=cax,
                 orientation="horizontal",
                 drawedges=False,  # No edges for continuous colormaps
+                extend="both"
             )
         else:
             # For discrete colormaps, use BoundaryNorm for binned colors
@@ -473,6 +474,7 @@ def create_filled_colorbar(
                 orientation="horizontal",
                 boundaries=bounds,
                 drawedges=True,
+                extend="both"
             )
     else:
         # For contourf, let it handle the colorbar automatically
