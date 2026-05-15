@@ -8,7 +8,7 @@ The model is loaded so how does the server actually hold up under load? Two tool
 Both drive the running vLLM server with the datasets shipped in this directory (`dataset_url_input_india.jsonl` and its repeated counterpart for guidellm). They hit the same `/pooling` endpoint exposed by the Prithvi model, but they answer different questions.
 
 ```bash
-cd 2_vllm_benchmarking
+cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/2_vllm_benchmarking
 ```
 ## `vllm bench`
 
@@ -48,7 +48,7 @@ Strengths: nothing extra to install, and the metric definitions match what the v
 From the `2_vllm_benchmarking` directory run: 
 
 ```bash
-2_vllm_benchmarking$  guidellm benchmark \
+guidellm benchmark \
   --target http://localhost:8000 \
   --backend openai_http \
   --model 1_run_model_in_vllm \

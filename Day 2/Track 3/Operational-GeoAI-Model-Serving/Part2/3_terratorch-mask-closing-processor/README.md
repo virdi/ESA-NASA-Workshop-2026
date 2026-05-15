@@ -13,7 +13,7 @@ A small custom IOProcessor for TerraTorch segmentation models served by vLLM. It
 From this directory:
 
 ```bash
-cd 3_terratorch-mask-closing-processor
+cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/3_terratorch-mask-closing-processor/
 uv pip install -e .
 cd ..
 ```
@@ -30,19 +30,6 @@ From the `Part2` directorty run:
 
 hf download mgazz/prithvi-eo-burnscars park_fire_scaled.tif --local-dir ./samples/
 ```
-
-```bash
-vllm serve mgazz/prithvi-eo-burnscars \
-    --skip-tokenizer-init \
-    --enable-mm-embeds \
-    --io-processor-plugin mask_closing \
-    --max-num-seqs 32 \
-    --enforce-eager
-```
-
-The only difference from the base setup is `--io-processor-plugin mask_closing`.
-
-## 3. Run the notebook
 
 Open [`inference.ipynb`](inference.ipynb) and follow each step
 
