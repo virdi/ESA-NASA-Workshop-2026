@@ -4,7 +4,7 @@ This project walks through serving TerraTorch geospatial foundation models with 
 
 ## Session Structure
 
-Three steps.
+Four steps.
 
 ### [Step 1: Run a Model in vLLM](./1_run_model_in_vllm/README.md)
 
@@ -32,6 +32,15 @@ vLLM speaks tensors-in / tensors-out. Real geospatial users send GeoTIFFs and ex
 - How to thread per-request state through the parent's pipeline without re-implementing it
 
 You come out with an installable `mask_closing` package, auto-registered with vLLM.
+
+### [Step 4: Serving vLLM on Kubernetes with KServe](./4_serving_vllm_on_k8s_with_kserve/README.md)
+
+Take the same vLLM serving setup off your local machine and onto a cluster:
+- Declare the model endpoint with a KServe `InferenceService`, running vLLM (Prithvi + TerraTorch IO processor) as the serving runtime
+- Wire up the storage, monitoring, networking, and RBAC prerequisites
+- Autoscale with KEDA driven by Prometheus metrics, then drive load with `vllm bench` and watch replicas scale
+
+You come out with a Kubernetes-deployed, autoscaling vLLM InferenceService.
 
 
 ## Prerequisites
@@ -83,3 +92,4 @@ Work through the directories in order. Each has its own README with the commands
 1. [`1_run_model_in_vllm/`](./1_run_model_in_vllm/README.md) — prepare the model artifacts and serve them with vLLM
 2. [`2_vllm_benchmarking/`](./2_vllm_benchmarking/README.md) — benchmark the running server with `vllm bench` and `guidellm`
 3. [`3_terratorch-mask-closing-processor/`](./3_terratorch-mask-closing-processor/README.md) — (bonus) add a custom IOProcessor and serve it
+4. [`4_serving_vllm_on_k8s_with_kserve/`](./4_serving_vllm_on_k8s_with_kserve/README.md) — deploy the vLLM server on Kubernetes with KServe and KEDA autoscaling
