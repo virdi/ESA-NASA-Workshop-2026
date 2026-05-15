@@ -41,7 +41,7 @@ This package is a teaching example. The three patterns worth recognising:
 - Hooking the **output** side of the pipeline by overriding a single inherited method (`save_geotiff`) — the mirror of the flip example, which hooks the input side via `load_image`.
 - Registering a plugin with vLLM through Python entry points (see `pyproject.toml`).
 
-The code lives in [`terratorch_mask_closing_processor/mask_closing_processor.py`](terratorch_mask_closing_processor/mask_closing_processor.py) — under 200 lines, worth a read.
+The code lives in [`terratorch_mask_closing_processor/mask_closing_processor.py`](terratorch_mask_closing_processor/mask_closing_processor.py) — under 50 lines, worth a read.
 
 ## License
 

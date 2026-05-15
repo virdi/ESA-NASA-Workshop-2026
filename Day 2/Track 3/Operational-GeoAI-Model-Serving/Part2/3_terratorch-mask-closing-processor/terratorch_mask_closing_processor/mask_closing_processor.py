@@ -17,33 +17,13 @@ saving) is inherited unchanged from the parent class.
 """
 
 from __future__ import annotations
-
-import contextvars
 import logging
-from collections.abc import Sequence
-from typing import Any
-
 import cv2
 import numpy as np
-import torch
-from vllm.entrypoints.pooling.pooling.protocol import IOProcessorRequest
-from vllm.inputs import PromptType
-from vllm.plugins.io_processors.interface import IOProcessorInput
 
 from terratorch.vllm.plugins.segmentation.segmentation_io_processor import SegmentationIOProcessor
 
-
 logger = logging.getLogger(__name__)
-
-
-# ContextVar so that save_geotiff (called inside the parent's post_process)
-# can pick up the closing params for the current request without breaking
-# under concurrent asyncio tasks. ContextVars are per-task in asyncio.
-_close_ctx: contextvars.ContextVar[tuple[bool, int]] = contextvars.ContextVar(
-    "close_ctx", default=(False, 0)
-)
-
-
 
 
 class MaskClosingIOProcessor(SegmentationIOProcessor):

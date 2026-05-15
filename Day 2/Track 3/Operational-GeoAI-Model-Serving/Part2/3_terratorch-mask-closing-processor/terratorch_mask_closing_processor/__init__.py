@@ -9,12 +9,10 @@ during stitched inference.
 """
 
 from .mask_closing_processor import MaskClosingIOProcessor
-from .types import MaskClosingRequestData
 
 __version__ = "0.1.0"
 __all__ = [
     "MaskClosingIOProcessor",
-    "MaskClosingRequestData",
     "register_mask_closing_processor",
 ]
 
