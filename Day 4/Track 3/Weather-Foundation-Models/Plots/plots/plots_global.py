@@ -889,17 +889,16 @@ def create_level_plots(
                     (
                         "Forecast Diff "
                         f"({exp_model_short} - {base_model_short}): "
-                        f"{fcst_glo_diff:.2f} {u}"
                         f"\nMin/Max: {fcst_minmax[0]}, {fcst_minmax[1]}"
                         f"\nMean Diff: {np.nanmean(fcst_diff):.2f} {u}"
                     ),
                     (
-                        f"{exp_model_ana} ACC: {acc_glo_raw:.3f}"
+                        f"{exp_model_ana} ACC"
                         f"\nMin/Max: {acc_minmax[0]}, {acc_minmax[1]}"
                         f"\nMean ACC: {np.nanmean(acc_raw):.3f}"
                     ),
                     (
-                        f"{exp_model_ana} RMSE: {rmse_glo_raw:.2f} {u}"
+                        f"{exp_model_ana} RMSE"
                         f"\nMin/Max: {rmse_minmax[0]}, {rmse_minmax[1]}"
                         f"\nMean RMSE: {np.nanmean(rmse_raw):.2f} {u}"
                     ),
@@ -948,9 +947,9 @@ def create_level_plots(
             # ═══════════════════════════════════════════════════════
             # Add main title to figure, save to disk
             # ═══════════════════════════════════════════════════════
-            season = season_year.split("_")[0] + season_year.split("_")[1]
+            season_space = season_year.split("_")[0] + " " + season_year.split("_")[1]
             top_title += [
-                f"{first_model} Statistics - {season}",
+                f"{first_model} Statistics,  {season_space}",
                 f"{ending}",
                 "Contours on forecast diff: >90% confidence"
             ]
