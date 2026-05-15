@@ -1065,12 +1065,6 @@ def create_regional_plots(
 
     # Discover available experiments from data_dict structure
     available_exps = discover_experiments(data_dict)
-    print(f"Discovered experiments: {available_exps}")
-
-    if 0 not in available_exps:
-        raise ValueError(
-            "Control experiment (index 0) must be present in data_dict"
-        )
 
     # Extract metadata from data_dict dict
     date_nms = data_dict["date_nms"]
@@ -1221,8 +1215,8 @@ def create_regional_plots(
                     vars_range_map,
                     nstats,
                     levs,
-                    available_exps,  # Changed: pass discovered experiments
-                    comparison_exps,  # Changed: pass comparison experiments
+                    available_exps,  
+                    comparison_exps, 
                     plotting_exps,
                     data_dict,
                     models,

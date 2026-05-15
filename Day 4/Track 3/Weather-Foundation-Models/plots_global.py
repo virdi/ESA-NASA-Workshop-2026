@@ -551,7 +551,7 @@ def extract_number(filename):
 
 def plot_level_subplot(
     fig, ax, cax, i, title, zdata, mask, x, y,
-    colormaps, is_difference, vmax
+    colormaps, allow_neg_vmin, vmax
 ):
     """
     Create and render a single subplot for level (map) plots.
@@ -583,7 +583,7 @@ def plot_level_subplot(
         Latitude coordinates
     colormaps : dict
         Dictionary of colormaps
-    is_difference : bool
+    allow_neg_vmin : bool
         True for difference plots (centered at 0), False for raw values (0 to max)
     vmax : float
         Maximum value for colormap
@@ -597,7 +597,7 @@ def plot_level_subplot(
         return
 
     # Set up colormap bounds based on whether this is a difference or raw value
-    if is_difference:
+    if allow_neg_vmin:
         # Centered at 0 for differences: -vmax to +vmax
         vmin = -vmax
         offset = (vmax - vmin) / 20 / 2
@@ -634,7 +634,7 @@ def plot_level_subplot(
     )
     
     # Add significance contours (only for difference plots with masks)
-    if mask is not None and is_difference:
+    if mask is not None and allow_neg_vmin:
         for s, sig_mask in enumerate(mask):
             ax.contour(
                 x, y, sig_mask.astype(int),
@@ -722,8 +722,6 @@ def create_level_plots(
             "Expected exactly 2 comparisons for 2-row layout."
         )
 
-    print(f"\nSetting up variable output directory in: {output_dir}")
-
     var_dir = output_dir / var
     var_dir.mkdir(parents=True, exist_ok=True)
 
@@ -757,7 +755,6 @@ def create_level_plots(
     # ═══════════════════════════════════════════════════════════════
     # Loop through each lead time (OUTER LOOP)
     # ═══════════════════════════════════════════════════════════════
-    print(f"Iterating over lead times: {leads}")
     for n, lead in enumerate(leads):
 
         # ═══════════════════════════════════════════════════════════
@@ -910,7 +907,7 @@ def create_level_plots(
                 fcst_mask = fcst_masks[comp_idx]
                 plot_data = [
                     (titles[0], fcst_diff, fcst_mask, True, FCmax_diff),
-                    (titles[1], acc_raw, None, False, ACCmax_raw),
+                    (titles[1], acc_raw, None, True, ACCmax_raw),
                     (titles[2], rmse_raw, None, False, RMSmax_raw),
                 ]
 
@@ -1271,7 +1268,7 @@ def create_global_plots(
             v = fvars[coll].index(var)
 
             print(
-                f"    Making plots for {var} (index {v}, {dim_label})..."
+                f"Making plots for {var} (index {v}, {dim_label})..."
             )
             # Pass levs as 7th positional, levels_to_plot in kwargs
             create_level_plots(
