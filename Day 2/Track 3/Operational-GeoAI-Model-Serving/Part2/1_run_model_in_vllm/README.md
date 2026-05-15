@@ -21,24 +21,24 @@ Run [`vllm_config_generator.py`](vllm_config_generator.py) to turn the TerraTorc
 **Note:** Input details are necessary to correctly warm-up the vLLM server.
 
 ```bash
-
 python vllm_config_generator.py \
     --ttconfig ./config_deploy.yaml \
     -i '{"target":"pixel_values","data":{"pixel_values":{"type": "torch.Tensor","shape": [6, 512, 512]}}}'
 ```
 
+> Paste the whole block at once (it spans several lines), not line by line.
+
 Flags:
 - `--ttconfig` — path to the TerraTorch model config (YAML, here `config_deploy.yaml`)
 - `-i, --input` — JSON string, or path to a JSON file, describing the model's input: target field, tensor shape, and dtype
 
-The result lands as `config.json` next to your input YAML.
+**You should see:** a new file `config.json` in this folder, next to your input YAML.
 
 ## Step 2: Convert the checkpoint to a binary
 
 vLLM wants a plain PyTorch state dict in `.bin` form, so [`convert_ckpt_to_bin.py`](convert_ckpt_to_bin.py) pulls out the `state_dict`, drops training-only entries, and saves the result as a standard PyTorch binary.
 
 ```bash
-
 python convert_ckpt_to_bin.py state_dict.ckpt -o state_dict.bin
 ```
 
@@ -47,7 +47,7 @@ Flags:
 - `-o, --output` — output path. Defaults to the input name with `.ckpt` swapped for `.bin`
 - `-v, --verbose` — print parameter details as the script runs
 
-You end up with a `.bin` file vLLM can load.
+**You should see:** a new file `state_dict.bin` in this folder. That is the weights file vLLM can load.
 
 ## Step 3: Run the model with vLLM
 
@@ -58,10 +58,11 @@ cd ..
 
 With `config.json` and the `.bin` file in place, start the server.
 
+> **This command does not finish.** It starts a server and then keeps running, printing logs. That is expected — do not close this terminal and do not press Enter again. When you see a line like `Application startup complete` or `Uvicorn running on http://0.0.0.0:8000`, the server is ready. To stop the server later, come back to this terminal and press `Ctrl+C`.
+
 From the `Part2` directory run: 
 
 ```bash
-
 vllm serve 1_run_model_in_vllm \
    --skip-tokenizer-init \
    --enable-mm-embeds \
@@ -88,9 +89,9 @@ Open [`inference.ipynb`](inference.ipynb) to send a sample request and visualize
 
 ## Step 4: Publish the model to the Hugging Face Hub (optional)
 
-> We skip this in the live session for time. It matters once you move past a single machine. Kubernetes pods, for example, need to pull the model from somewhere reachable at startup, and a local filesystem isn't it.
+> We skip this in the live session for time. It matters once you move past a single machine. Kubernetes pods, for example, need to pull the model from somewhere reachable at startup.
 
-With `config.json` and `<model-name>.bin` produced, the natural next move for a production deployment is to publish them as a model repository on the [Hugging Face Hub](https://huggingface.co/). vLLM can then load by repo ID (e.g. `your-org/prithvi-eo-flood`) instead of a local path.
+With `config.json` and `.bin` file produced, the natural next move for a production deployment is to publish them as a model repository on the [Hugging Face Hub](https://huggingface.co/). vLLM can then load by repo ID (e.g. `your-org/prithvi-eo-flood`) instead of a local path.
 
 ### Why this matters in Kubernetes
 

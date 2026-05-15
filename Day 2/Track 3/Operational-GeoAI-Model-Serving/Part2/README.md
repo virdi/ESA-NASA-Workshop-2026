@@ -36,14 +36,18 @@ You come out with an installable `mask_closing` package, auto-registered with vL
 
 ## Prerequisites
 
+> **If you are joining the live workshop session:** everything below is already installed on your sandbox. Skip "Prerequisites" and "Setup" and go straight to [Getting Started](#getting-started). The rest of this section only matters if you later run this on your own machine.
+
+To run this on your own machine you need:
+
 - Linux system with NVIDIA GPU
 - Python 3.12
 - CUDA and NVIDIA drivers installed
 - `uv` package manager ([installation guide](https://github.com/astral-sh/uv))
 
-> If you are joining the live session, a pre-configured sandbox is provided — you do not need to install anything locally.
-
 ## Setup
+
+> These steps are run in a **terminal**. Each block below is one command (or a small set of them) — copy the whole block and paste it into the terminal, then press Enter. Lines that start with `cd` change which folder you are working in; run them exactly as written. The `\ ` inside the path is an escaped space — keep it as-is. Where a command spans several lines ending in `\`, paste the whole block at once, not line by line.
 
 Create a virtual environment with `uv` and install the dependencies:
 
@@ -78,3 +82,4 @@ Work through the directories in order. Each has its own README with the commands
 
 1. [`1_run_model_in_vllm/`](./1_run_model_in_vllm/README.md) — prepare the model artifacts and serve them with vLLM
 2. [`2_vllm_benchmarking/`](./2_vllm_benchmarking/README.md) — benchmark the running server with `vllm bench` and `guidellm`
+3. [`3_terratorch-mask-closing-processor/`](./3_terratorch-mask-closing-processor/README.md) — (bonus) add a custom IOProcessor and serve it

@@ -5,7 +5,9 @@ The model is loaded, so how does the server actually hold up under load? Two too
 - **`vllm bench`** — the load generator built into vLLM itself
 - **`guidellm`** — a more flexible benchmarking harness from the broader LLM-serving ecosystem
 
-Both drive the running vLLM server with the datasets shipped in this directory (`dataset_url_input_india.jsonl` and its repeated counterpart for guidellm). They hit the same `/pooling` endpoint exposed by the Prithvi model, but they answer different questions.
+Both drive the running vLLM server with the datasets shipped in this directory (`dataset_path_input_india.jsonl` for `vllm bench` and `dataset_path_input_india_guidellm.jsonl` for `guidellm`). They hit the same `/pooling` endpoint exposed by the Prithvi model, but they answer different questions.
+
+> The vLLM server from Step 1 must still be running in its own terminal for any of the commands below to work. Run these benchmarking commands in a separate terminal.
 
 ```bash
 cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/2_vllm_benchmarking
@@ -17,7 +19,6 @@ cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part
 From the `2_vllm_benchmarking` directory run: 
 
 ```bash
-
 vllm bench serve \
   --base-url http://localhost:8000 \
   --dataset-name=custom \

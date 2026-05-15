@@ -22,16 +22,17 @@ This registers `mask_closing` as a vLLM I/O processor plugin. No code changes to
 
 ## 2. Download sample and start vLLM with the plugin
 
-Stop any running vLLM server, then restart it pointing at the new plugin.
+If a vLLM server from an earlier step is still running, stop it first: go to the terminal where it is running and press `Ctrl+C`, then wait until it returns to a normal prompt. It will be restarted with the new plugin from inside the notebook.
 
 From the `Part2` directory run:
 
 ```bash
-
 hf download mgazz/prithvi-eo-burnscars park_fire_scaled.tif --local-dir ./samples/
 ```
 
-Open [`inference.ipynb`](inference.ipynb) and follow each step
+**You should see:** the file `park_fire_scaled.tif` appears under the `samples/` folder.
+
+Open [`inference.ipynb`](inference.ipynb) and follow each step.
 
 ## What to take away
 
