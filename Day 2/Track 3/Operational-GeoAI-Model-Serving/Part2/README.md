@@ -48,6 +48,7 @@ You come out with an installable `mask_closing` package, auto-registered with vL
 Create a virtual environment with `uv` and install the dependencies:
 
 ```bash
+cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/
 uv venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
