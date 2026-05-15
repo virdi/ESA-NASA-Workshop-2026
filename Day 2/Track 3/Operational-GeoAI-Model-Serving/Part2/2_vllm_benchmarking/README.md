@@ -1,6 +1,6 @@
 # Step 2: Benchmarking the vLLM Server
 
-The model is loaded so how does the server actually hold up under load? Two tools for measuring throughput and latency:
+The model is loaded, so how does the server actually hold up under load? Two tools for measuring throughput and latency:
 
 - **`vllm bench`** — the load generator built into vLLM itself
 - **`guidellm`** — a more flexible benchmarking harness from the broader LLM-serving ecosystem

@@ -24,7 +24,7 @@ This registers `mask_closing` as a vLLM I/O processor plugin. No code changes to
 
 Stop any running vLLM server, then restart it pointing at the new plugin.
 
-From the `Part2` directorty run:
+From the `Part2` directory run:
 
 ```bash
 

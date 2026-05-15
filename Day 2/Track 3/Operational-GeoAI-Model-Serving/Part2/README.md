@@ -10,7 +10,7 @@ Three steps.
 
 Take a TerraTorch model, make it loadable by vLLM, and serve it:
 - Convert a TerraTorch YAML configuration into a vLLM-compatible `config.json`
-- Prepare the checkpoint (`.ckpt`) for vLLM creating a minimal PyTorch binary (`.bin`)
+- Prepare the checkpoint (`.ckpt`) for vLLM by creating a minimal PyTorch binary (`.bin`)
 - Start a vLLM server with the model and run inference from a notebook
 
 You come out the other side with a `config.json`, a `.bin` weights file, and a running vLLM server returning segmentation masks.

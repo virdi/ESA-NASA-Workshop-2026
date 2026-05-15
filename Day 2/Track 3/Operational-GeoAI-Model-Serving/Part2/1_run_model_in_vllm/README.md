@@ -51,7 +51,7 @@ You end up with a `.bin` file vLLM can load.
 
 ## Step 3: Run the model with vLLM
 
-Move back in the Part2 directory
+Move back to the Part2 directory
 ```
 cd ..
 ```
