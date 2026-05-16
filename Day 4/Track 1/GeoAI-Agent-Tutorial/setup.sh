@@ -14,6 +14,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="${SCRIPT_DIR}/logs"
 PID_FILE="${LOG_DIR}/gunicorn.pid"
 
+export BUCKET_NAME="${BUCKET_NAME:-enw-04241552-kx1nks-shared}"
+export S3_CONFIG_FILENAME="${S3_CONFIG_FILENAME:-s3://enw-04241552-kx1nks-shared/geo-agent-artifacts/config.yaml}"
+export CHECKPOINT_FILENAME="${CHECKPOINT_FILENAME:-s3://enw-04241552-kx1nks-shared/geo-agent-artifacts/Prithvi-EO-V2-600-Sen1Floods11.pt}"
+export USECASE="${USECASE:-flood}"
+export MODEL_SERVER_TIMEOUT="${MODEL_SERVER_TIMEOUT:-150}"
+
+if [ -z "${S3_CONFIG_FILENAME}" ] || [ -z "${CHECKPOINT_FILENAME}" ]; then
+    echo "S3_CONFIG_FILENAME and CHECKPOINT_FILENAME must be set" >&2
+    exit 1
+fi
+
 sudo -n apt-get update -y
 sudo -n apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" libgl1 libglib2.0-0 libgdal-dev
 
@@ -35,7 +46,7 @@ mkdir -p "${LOG_DIR}"
 
 cd "${SCRIPT_DIR}/${REPO_DIR}/code"
 
-timeout="${MODEL_SERVER_TIMEOUT:-60}"
+timeout="${MODEL_SERVER_TIMEOUT}"
 host="${MODEL_SERVER_HOST:-0.0.0.0}"
 port="${MODEL_SERVER_PORT:-8080}"
 
