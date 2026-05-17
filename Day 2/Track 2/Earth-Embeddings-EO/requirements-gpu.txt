@@ -1,0 +1,30 @@
+# Earth Embeddings for EO — Day 2 / Track 2 — GPU install (CUDA)
+# Same as requirements.txt but pulls the standard PyPI torch wheels, which include
+# the bundled CUDA libs. Use this on a machine with an NVIDIA GPU + matching driver.
+#
+# Install:
+#     pip install -r requirements-gpu.txt
+#
+# The workshop notebooks themselves run end-to-end on CPU within their time budget,
+# so GPU is an optional speedup, not a requirement.
+
+# --- ML / EO foundation-model stack --------------------------------------------
+timm
+datasets
+transformers
+sentencepiece
+huggingface_hub
+einops
+tifffile
+
+# --- torch (CUDA build from PyPI) ----------------------------------------------
+torch
+torchvision
+
+# --- preinstalled on Colab; listed for non-Colab installs ----------------------
+numpy
+matplotlib
+scikit-learn
+scipy
+Pillow
+tqdm
