@@ -16,14 +16,19 @@
 timm
 # Notebooks 0, 3, 4, 5: HuggingFace datasets (EuroSAT, LEVIR-CD)
 datasets
-# Notebooks 3, 4, 5: transformers for Git-RSCLIP (SigLIP-style CLIP)
+# Notebooks 3, 4, 5: transformers for Git-RSCLIP (SigLIP-style CLIP).
+# SiglipTokenizer needs both sentencepiece *and* protobuf at import time;
+# Colab preinstalls protobuf but a fresh venv does not.
 transformers
 sentencepiece
+protobuf
 # Notebooks 1, 2, 3, 4, 5: hf_hub_download (model weights + precomputed embedding pools)
 huggingface_hub
 # Notebook 1: Prithvi-EO-2.0 MAE — einops for patch ops, tifffile for HLS GeoTIFF reads
 einops
 tifffile
+# Notebook 4: FAISS-IVF ANN index for the 5,400-vector retrieval benchmark
+faiss-cpu
 
 # --- torch (CPU build) ---------------------------------------------------------
 # The +cpu local-version suffix forces pip to take wheels from the index above

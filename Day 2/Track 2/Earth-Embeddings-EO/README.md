@@ -44,3 +44,15 @@ By the end of the session participants will be able to:
 4. Implement natural-language retrieval by aligning text queries with EO embeddings.
 5. Compose queries via vector arithmetic to express *with/without* and *before/after* intents.
 6. Evaluate retrieval quality and recognise common pitfalls (domain shift, cloud/season confounders, resolution mismatch, indexing trade-offs).
+
+## Foundation model landscape
+
+The five EO foundation models worth knowing for this session, and the pragmatic reason for what each notebook does (or doesn't) load:
+
+| Model | Family | Weights | This session |
+|---|---|---|---|
+| **Prithvi-EO-2.0** (IBM-NASA, MAE) | masked self-supervised | [HF `ibm-nasa-geospatial/Prithvi-EO-2.0-300M`](https://huggingface.co/ibm-nasa-geospatial/Prithvi-EO-2.0-300M) | **NB1** |
+| **DINOv3 SAT-493M** (Meta, self-distillation) | self-supervised / contrastive | [HF mirror `timm/vit_large_patch16_dinov3.sat493m`](https://huggingface.co/timm/vit_large_patch16_dinov3.sat493m) | **NB2** |
+| **Git-RSCLIP** (CLIP variant on Git10M) | multimodal alignment | [HF `lcybuaa/Git-RSCLIP-base`](https://huggingface.co/lcybuaa/Git-RSCLIP-base) | **NB3 / NB4 / NB5** |
+| **AlphaEarth Foundations** (Google DeepMind) | multi-sensor distillation | weights **not released**; precomputed 64-d annual embeddings on [Earth Engine](https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_SATELLITE_EMBEDDING_V1_ANNUAL) | discussed; can't be loaded |
+| **TerraMind** (IBM / ESA) | any-to-any multimodal generative | [HF org `ibm-esa-geospatial`](https://huggingface.co/ibm-esa-geospatial), [GitHub `IBM/terramind`](https://github.com/IBM/terramind) | discussed; loader (`terratorch`) is heavy enough that we point to it rather than bundle it in NB2 |

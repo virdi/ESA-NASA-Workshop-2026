@@ -13,9 +13,11 @@ timm
 datasets
 transformers
 sentencepiece
+protobuf
 huggingface_hub
 einops
 tifffile
+faiss-cpu  # CPU build is plenty for the 5,400-vector index; swap to faiss-gpu if you actually need GPU FAISS
 
 # --- torch (CUDA build from PyPI) ----------------------------------------------
 torch
