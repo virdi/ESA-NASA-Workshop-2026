@@ -1,0 +1,80 @@
+# Weather Foundation Models — Python package requirements
+# Install with: uv pip install -r requirements.txt
+# Full SageMaker bootstrap (uv install, venv, Jupyter kernel) lives in setup.sh.
+
+# --- Build prerequisites (needed by flash_attn / timm with --no-build-isolation) ---
+packaging
+ninja
+# Pin torch to a range that has precompiled flash-attn 2.7.4.post1 wheels
+# (flash-attn ships wheels for torch 2.2–2.7; newer torch forces a source
+# build that needs the CUDA toolkit, which SageMaker JupyterLab lacks).
+torch>=2.6,<2.8
+
+# --- AWS ---
+boto3
+s3fs
+
+# --- Anemoi stack ---
+anemoi-inference[huggingface]==0.4.3
+anemoi-models==0.2.1
+anemoi-transform==0.1.5
+anemoi-utils==0.4.17
+
+# --- ECMWF earthkit + open data ---
+earthkit-regrid>=0.4
+earthkit-data==0.13.5
+earthkit-meteo==0.3.0
+ecmwf-opendata==0.3.19
+
+# --- Attention kernels ---
+# flash_attn / timm are listed in UV_NO_BUILD_ISOLATION_PACKAGE in setup.sh.
+flash_attn==2.7.4.post1
+
+# --- NVIDIA / CUDA runtime ---
+nvidia-pyindex
+nvidia-cuda-runtime-cu12
+nvidia-cudnn-cu11==9.8.0.87
+
+# --- Plotting / geo ---
+cartopy
+
+# --- GraphCast + JAX (GPU) ---
+https://github.com/deepmind/graphcast/archive/master.zip
+jax[cuda12]
+chex
+dm-haiku
+
+# --- 3D / mesh utilities used by GraphCast ---
+trimesh
+Rtree
+pyglet
+manifold3d
+lxml
+drawsvg
+xxhash
+
+# --- GenCast / xarray IO ---
+xarray
+netCDF4
+h5py
+h5netcdf
+IPython
+
+# --- Aurora ---
+cdsapi
+
+# --- Tracking + model IO ---
+wandb
+huggingface-hub
+onnx
+onnxruntime
+ruamel.yaml
+numpy<2
+einops
+timm
+
+# --- Spherical harmonics ---
+torch-harmonics
+
+# --- Jupyter kernel ---
+ipykernel
