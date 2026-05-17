@@ -24,3 +24,7 @@ env/
 .DS_Store
 .idea/
 .vscode/
+
+# CARE runtime artifacts (cloned phase-prompts repo + per-run workspaces)
+Day 4/Track 1/GeoAI-Agent-Tutorial/AKD-CARE/
+Day 4/Track 1/GeoAI-Agent-Tutorial/artifacts/care_workspace/
