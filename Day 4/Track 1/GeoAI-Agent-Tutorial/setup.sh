@@ -79,6 +79,6 @@ uv sync --frozen
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/${TUTORIAL_VENV_DIR}/bin/activate"
 
-python -m ipykernel install --user --force \
+python -m ipykernel install --user \
     --name "${KERNEL_NAME}" \
     --display-name "${KERNEL_DISPLAY_NAME}"

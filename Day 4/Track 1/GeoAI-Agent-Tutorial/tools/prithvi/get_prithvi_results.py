@@ -7,7 +7,7 @@ from akd.tools import BaseTool
 from akd_ext.mcp import mcp_tool
 from pydantic import ConfigDict, Field
 
-PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8000")
+PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8080")
 
 
 class GetPrithviResultsInput(InputSchema):
