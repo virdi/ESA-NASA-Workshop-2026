@@ -7,7 +7,7 @@ from akd.tools import BaseTool
 from akd_ext.mcp import mcp_tool
 from pydantic import ConfigDict, Field
 
-PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8000")
+PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8080")
 
 
 class RunPrithviInferenceInput(InputSchema):
@@ -59,8 +59,9 @@ def _run_prithvi_inference(
     }
 
     try:
+        print(f"DEBUG: RUNNING AGAINST: {PRITHVI_SERVER_URL}")
         resp = requests.post(
-            f"{PRITHVI_SERVER_URL}/infer",
+            f"{PRITHVI_SERVER_URL}/invocations",
             json=payload,
             timeout=30,
         )
