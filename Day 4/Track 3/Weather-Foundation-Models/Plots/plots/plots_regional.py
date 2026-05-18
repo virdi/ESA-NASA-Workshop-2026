@@ -223,6 +223,87 @@ def plot_rectangle(ax, i, x_vals, ci_l, ci_u, color, width):
     )
     ax.add_patch(rect)
 
+def adjust_final_value_positions(plotting_exps, final_values, y_min, y_max, 
+                                  min_distance_frac=0.025, 
+                                  debug=False, debug_label=""):
+    """
+    Adjust vertical positions of final value text to avoid overlap.
+    
+    Logic:
+    - Maintains minimum distance between labels
+    - Near top: keeps higher value, moves lower down
+    - Near bottom: keeps lower value, moves higher up
+    - Middle: splits adjustment between both
+    
+    Parameters:
+    - plotting_exps: list of experiment indices being plotted
+    - final_values: dict mapping exp_idx to final value
+    - y_min, y_max: axis limits
+    - min_distance_frac: minimum distance as fraction of y-axis range (default 2.5%)
+    - debug: if True, print adjustment details
+    - debug_label: string describing current plot (e.g., "T_850mb_GLO")
+    
+    Returns:
+    - dict mapping exp_idx to y-offset
+    """
+    y_range = y_max - y_min
+    min_distance = y_range * min_distance_frac
+    tolerance = min_distance * 0.01  # ← ADD THIS: 1% of min_distance as tolerance
+    
+    # Sort experiments by their final values
+    sorted_exps = sorted(plotting_exps, key=lambda e: final_values[e])
+    
+    # Initialize offsets
+    offsets = {exp: 0.0 for exp in plotting_exps}
+    
+    # Iteratively adjust positions to handle cascading overlaps
+    max_iterations = 10
+    for iteration in range(max_iterations):
+        adjusted = False
+        
+        for i in range(len(sorted_exps) - 1):
+            exp_lower = sorted_exps[i]
+            exp_higher = sorted_exps[i + 1]
+            
+            # Current positions including previous offsets
+            pos_lower = final_values[exp_lower] + offsets[exp_lower]
+            pos_higher = final_values[exp_higher] + offsets[exp_higher]
+            
+            distance = pos_higher - pos_lower
+            
+            # ← CHANGE THIS: Add tolerance to avoid floating point issues
+            if distance < (min_distance - tolerance):
+                gap_needed = min_distance - distance
+                
+                # Determine adjustment strategy based on position in plot
+                if pos_higher > (y_min + 0.85 * y_range):
+                    # Near top (>85%) - keep higher one, move lower down
+                    if debug:
+                        print(f"    Strategy: NEAR TOP - moving exp{exp_lower} down by {gap_needed:.4f}")
+                    offsets[exp_lower] -= gap_needed
+                    adjusted = True
+                elif pos_lower < (y_min + 0.15 * y_range):
+                    # Near bottom (<15%) - keep lower one, move higher up
+                    if debug:
+                        print(f"    Strategy: NEAR BOTTOM - moving exp{exp_higher} up by {gap_needed:.4f}")
+                    offsets[exp_higher] += gap_needed
+                    adjusted = True
+                else:
+                    # Middle - split the adjustment
+                    if debug:
+                        print(f"    Strategy: MIDDLE - splitting adjustment ±{gap_needed/2:.4f}")
+                    offsets[exp_lower] -= gap_needed / 2
+                    offsets[exp_higher] += gap_needed / 2
+                    adjusted = True
+        
+        # Stop if no adjustments were made
+        if not adjusted:
+            if debug:
+                print(f"  Converged after {iteration} iterations")
+            break
+        
+    return offsets
+
 
 def plot_level(
     nstats,
@@ -261,6 +342,7 @@ def plot_level(
     title,
     long,
     lead_indices,
+    pbar=None,
 ):
     """
     Create a level plot with ACC on upper axis and RMSE on lower axis.
@@ -274,7 +356,7 @@ def plot_level(
     var_dir.mkdir(parents=True, exist_ok=True)
 
     # Create figure with upper and lower axes
-    fig = plt.figure(figsize=(8, 6))
+    fig = plt.figure(figsize=(7, 7))
     axu = fig.add_axes([0.205, 0.417, 0.678, 0.466])
     axl = fig.add_axes([0.205, 0.117, 0.678, 0.300])
     axu.set_ylabel("Anomaly Correlation")
@@ -305,7 +387,7 @@ def plot_level(
         if exp_idx <= 1:  # Control
             label = parts[1] if len(parts) == 2 else model
         else:  # Experiments
-            label = parts[0] + " vs " + parts[1] if len(parts) >= 1 else model
+            label = parts[0] # + " vs " + parts[1] if len(parts) >= 1 else model
 
         # Plot ACC line
         axu.plot(
@@ -317,16 +399,24 @@ def plot_level(
             linewidth=1.5,
         )
 
-        # Add final value text with vertical offset
-        final = y_vals_acc[-1]
-        if np.isfinite(final):
-            # For ACC (0-1 range), use fixed offset
-            offset_increment = 0.03  # Adjust this value if needed
-            y_offset = (idx - len(plotting_exps)/2) * offset_increment
+        # Add final value text to right-hand side
+        if idx == 0:
+            acc_finals = {}
+        acc_finals[exp_idx] = y_vals_acc[-1]
 
+    ymin, ymax = axu.get_ylim()
+    acc_offsets = adjust_final_value_positions(
+        plotting_exps, acc_finals, ymin, ymax, min_distance_frac=0.085,
+        debug=False, debug_label=f"ACC_{var}_{lev}mb_{reg}"
+    )
+    
+    for exp_idx in plotting_exps:
+        final = acc_finals[exp_idx]
+        if np.isfinite(final):
+            color_idx = available_exps.index(exp_idx)
             txt = axu.text(
                 xloc,
-                final + y_offset,
+                final + acc_offsets[exp_idx],
                 f"{final:.4f}",
                 color=colors[color_idx],
                 fontsize=8,
@@ -388,7 +478,7 @@ def plot_level(
         if exp_idx <= 1:  # Control
             label = parts[1] if len(parts) == 2 else model
         else:  # Experiments
-            label = parts[0] + " vs " + parts[1] if len(parts) >= 1 else model
+            label = parts[0] # + " vs " + parts[1] if len(parts) >= 1 else model
 
         # Plot RMSE line
         axl.plot(
@@ -400,18 +490,24 @@ def plot_level(
             linewidth=1.5,
         )
 
-        # Add final value text with vertical offset
-        final = y_vals_rmse[-1]
+        # Store final values for later adjustment
+        if idx == 0:
+            rmse_finals = {}
+        rmse_finals[exp_idx] = y_vals_rmse[-1]
+    
+    ymin, ymax = axu.get_ylim()
+    rmse_offsets = adjust_final_value_positions(
+        plotting_exps, rmse_finals, ymin, ymax, min_distance_frac=0.085,
+        debug=False, debug_label=f"RMSE_{var}_{lev}mb_{reg}"
+    )
+    
+    for exp_idx in plotting_exps:
+        final = rmse_finals[exp_idx]
         if np.isfinite(final):
-            # For RMSE (variable range), calculate offset based on y-axis range
-            ymin_rmse, ymax_rmse = axl.get_ylim()
-            y_range = ymax_rmse - ymin_rmse
-            offset_increment = y_range * 0.03  # 2% of y-axis range
-            y_offset = (idx - len(plotting_exps)/2) * offset_increment
-
+            color_idx = available_exps.index(exp_idx)
             txt = axl.text(
                 xloc,
-                final + y_offset,
+                final + rmse_offsets[exp_idx],
                 f"{final:.4f}",
                 color=colors[color_idx],
                 fontsize=8,
@@ -475,7 +571,7 @@ def plot_level(
     # Use actual filtered lead times for x-axis
     axl.set_xticks(x_vals)
     axl.set_xlim(x_min, x_max)
-    axl.set_xlabel("Forecast Day", fontsize=10, labelpad=3)
+    axl.set_xlabel("Forecast Day", fontsize=10, labelpad=8)
     axl.tick_params(axis="both", labelsize=8, pad=2, length=2)
     axl.grid(
         True,
@@ -521,7 +617,7 @@ def plot_level(
         handlelength=2,
         handletextpad=0.5,
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.15),
+        bbox_to_anchor=(0.5, -0.21),
         ncol=4,
         frameon=False,
     )
@@ -535,6 +631,10 @@ def plot_level(
     plotnm = f"stats_{title[coll][v]}_ACC-RMSE_{reg}_{lev}_{season}.png"
     plt.savefig(var_dir / plotnm, dpi=dpi)
     plt.close(fig)
+
+    # Update progress bar
+    if pbar is not None:
+        pbar.update(1) 
 
 
 def plot_all_collection_levels(
@@ -579,6 +679,7 @@ def plot_all_collection_levels(
     levels_to_plot,
     stats_to_plot,
     lead_indices,
+    pbar=None,
 ):
     """Create all plots (zonal and level) for a 3d collection."""
 
@@ -587,7 +688,7 @@ def plot_all_collection_levels(
 
     # Create plots for each variable/stat combination
     for v, var in enumerate(fvars[coll]):
-        print(f"\nMaking level plots for {var} (3D) {reg}:")
+        # print(f"\nMaking level plots for {var} (3D) {reg}:")
 
         # Set scale min/max for RMS plots
         var_range = vars_range_map.get(var.upper())
@@ -646,8 +747,12 @@ def plot_all_collection_levels(
                 title,
                 long,
                 lead_indices,
+                pbar,
             )
             plt.close("all")
+
+        if pbar is not None:
+            pbar.set_postfix_str(f"Finished {var} {reg}")
 
 
 # ================== CONFIDENCE INTERVAL FUNCTIONS ==================
@@ -1166,6 +1271,30 @@ def create_regional_plots(
     regional_subdir = plots_dir / "regional"
     regional_subdir.mkdir(exist_ok=True, parents=True)
 
+    # ========== Calculate total number of plots ==========
+    total_plots = 0
+    for reg in regions:
+        for coll in collections:
+            n_vars = len(fvars[coll])
+            if n_vars == 0:
+                continue
+                
+            if is_3d[coll]:
+                # 3D: one plot per variable per level
+                if levels_to_plot is None:
+                    n_levels = len(levs)
+                else:
+                    n_levels = len([lev for lev in levs if lev in levels_to_plot])
+                total_plots += n_vars * n_levels
+            else:
+                # 2D: one plot per variable
+                total_plots += n_vars
+    
+    print(f"\nTotal plots to generate: {total_plots}")
+    
+    # Create progress bar
+    pbar = tqdm(total=total_plots, desc="Generating regional plots", unit="plot")
+
     # ========== MAIN PLOTTING LOOP: Loop over regions ==========
     all_region_times = []
     for reg in regions:
@@ -1250,6 +1379,7 @@ def create_regional_plots(
                     levels_to_plot,
                     stats_to_plot,
                     lead_indices,
+                    pbar
                 )
             else:
                 # Plot 2D variables (no level iteration needed)
@@ -1257,7 +1387,7 @@ def create_regional_plots(
                     if vars_to_plot and var not in vars_to_plot:
                         continue
 
-                    print(f"\nMaking plot for {var} (2D) {reg}")
+                    # print(f"\nMaking plot for {var} (2D) {reg}")
 
                     # Call plot_level once (no level loop for 2D)
                     plot_level(
@@ -1297,8 +1427,14 @@ def create_regional_plots(
                         title,
                         long,
                         lead_indices,
+                        pbar,
                     )
                     plt.close("all")
+
+                    if pbar is not None:
+                        pbar.set_postfix_str(f"Finished {var} {reg}")
+
+    pbar.close()
 
     print(f'\n{"="*60}')
     print(f"PLOTTING COMPLETE!")

@@ -1158,7 +1158,7 @@ def load_regional_stats_data(
     exp_valid_dates = []
 
     pbar = tqdm(
-        enumerate(exp_file_lists), desc="Merging experiments...", total=len(exp_file_lists)
+        enumerate(exp_file_lists), desc="Merging experiments", total=len(exp_file_lists)
     )
     for exp_idx, file_list in pbar:
         merged_ds, excluded_dates, n_excl = merge_experiment_files(
@@ -1265,7 +1265,7 @@ def load_regional_stats_data(
 
     
     pbar = tqdm(
-        enumerate(merged_datasets), desc="Loading data...", total=len(merged_datasets)
+        enumerate(merged_datasets), desc="Loading data", total=len(merged_datasets)
     )
     for exp_idx, ds in pbar:
         exp_data = _load_experiment_data(
@@ -1428,7 +1428,7 @@ def load_global_stats_data(
     exp_valid_dates = []
 
     pbar = tqdm(
-        enumerate(exp_file_lists), desc="Merging experiments...", total=len(exp_file_lists)
+        enumerate(exp_file_lists), desc="Merging experiments", total=len(exp_file_lists)
     )
     for exp_idx, file_list in pbar:
         if verbose:
@@ -1598,7 +1598,7 @@ def load_global_stats_data(
     n_lons = len(lons)
 
     pbar = tqdm(
-        enumerate(merged_datasets), desc="Loading data...", total=len(merged_datasets)
+        enumerate(merged_datasets), desc="Loading data", total=len(merged_datasets)
     )
     for exp_idx, ds in pbar:
         if verbose:

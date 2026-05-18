@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 from PIL import Image
 from scipy import stats
+from tqdm import tqdm
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -686,6 +687,7 @@ def create_level_plots(
     lead_indices=None,
     stat_limits=None,
     gif_frame_duration=1000,
+    pbar=None,
 ):
     """
     Create all level plots (horizontal maps) for a variable.
@@ -964,6 +966,9 @@ def create_level_plots(
             plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
             plt.close("all")
 
+            if pbar is not None:
+                pbar.update(1)
+
     # ═══════════════════════════════════════════════════════════════
     # Save all plots to .gif across all lead times
     # ═══════════════════════════════════════════════════════════════
@@ -979,6 +984,9 @@ def create_level_plots(
                 duration=gif_frame_duration,
                 loop=0,
             )
+    
+    if pbar is not None:
+        pbar.set_postfix_str(f"finished {var}")
 
 # ================== SMALL DRIVER HELPERS ====================
 
@@ -1225,6 +1233,30 @@ def create_global_plots(
     # Plot saving info
     dpi = data_dict["plot_dpi"]
 
+    # ========== CALCULATE TOTAL NUMBER OF PLOTS ==========
+    total_plots = 0
+    for coll in collections:
+        if not fvars_filtered[coll]:  # Skip empty collections
+            continue
+        
+        for var in fvars_filtered[coll]:
+            # Determine number of levels for this variable
+            if is_3d[coll]:
+                # 3D: use filtered levels or all levels
+                n_levels = len(levels_to_plot) if levels_to_plot else len(levs)
+            else:
+                # 2D: always 1 "level"
+                n_levels = 1
+            
+            # Each level gets plotted for each lead time
+            n_plots_for_var = n_levels * len(leads)
+            total_plots += n_plots_for_var
+    
+    print(f"Total plots to generate: {total_plots}")
+    
+    # Create single progress bar
+    pbar = tqdm(total=total_plots, desc="Generating global plots", unit="plot")
+
     # ========== GENERATE PLOTS ==========
 
     print(f'\n{"="*60}')
@@ -1268,9 +1300,9 @@ def create_global_plots(
         for var in fvars_filtered[coll]:
             v = fvars[coll].index(var)
 
-            print(
-                f"Making plots for {var} (index {v}, {dim_label})..."
-            )
+            # print(
+            #     f"Making plots for {var} (index {v}, {dim_label})..."
+            # )
             # Pass levs as 7th positional, levels_to_plot in kwargs
             create_level_plots(
                 # m, models[m],
@@ -1280,8 +1312,13 @@ def create_global_plots(
                 var,
                 coll,
                 levs,
+                pbar=pbar,
                 **plot_params,
             )
+    
+    # Close progress bar after all plots
+    pbar.close()
+    
     # ========== COMPLETION ==========
 
     print(f'\n{"="*60}')
