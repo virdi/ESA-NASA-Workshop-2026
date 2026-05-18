@@ -157,6 +157,48 @@ def _band_grid(
     return stacked, upsampled
 
 
+def index_maps(
+    ts: TimeSeries,
+    frame_idx: int,
+    *,
+    indices: tuple[str, ...] = ("NDVI", "NDMI", "NDWI"),
+) -> np.ndarray:
+    """Dense per-pixel maps of normalized vegetation indices on one frame.
+
+    Same formulas as :func:`s2tutorial.nrt.center_pixel_features`, applied
+    densely over the 10 m grid instead of only the labelled centre pixel.
+
+    - NDVI = (B08 − B04) / (B08 + B04)
+    - NDMI = (B08 − B11) / (B08 + B11)   (B11 nearest-neighbour upsampled from 20 m)
+    - NDWI = (B03 − B08) / (B03 + B08)   (McFeeters)
+
+    Returns ``(H, W, len(indices))`` float32 in physical units (typically
+    within [-1, 1]). Order of the last axis follows ``indices``.
+    """
+    s10 = ts.s2_10m(frame_idx, as_reflectance=True)   # (4, H, W)  B02 B03 B04 B08
+    s20 = ts.s2_20m(frame_idx, as_reflectance=True)   # (6, H/2, W/2)  …B11…
+    H, W = s10.shape[1], s10.shape[2]
+    B03 = s10[1]
+    B04 = s10[2]
+    B08 = s10[3]
+    B11_20m = s20[4]
+    B11 = np.repeat(np.repeat(B11_20m, 2, axis=0), 2, axis=1)[:H, :W]
+    eps = 1e-6
+    out: list[np.ndarray] = []
+    for name in indices:
+        if name == "NDVI":
+            out.append((B08 - B04) / np.clip(B08 + B04, eps, None))
+        elif name == "NDMI":
+            out.append((B08 - B11) / np.clip(B08 + B11, eps, None))
+        elif name == "NDWI":
+            out.append((B03 - B08) / np.clip(B03 + B08, eps, None))
+        else:
+            raise ValueError(
+                f"Unknown index {name!r}; expected one of NDVI, NDMI, NDWI"
+            )
+    return np.stack(out, axis=-1).astype(np.float32)
+
+
 def _per_pixel_baseline_features(
     s10: np.ndarray, s20: np.ndarray, s60: np.ndarray | None,
     *,

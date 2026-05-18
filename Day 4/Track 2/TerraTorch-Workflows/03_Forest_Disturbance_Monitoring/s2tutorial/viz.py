@@ -166,7 +166,6 @@ def _l2(code: int) -> int:
 def _color(code: int) -> str:
     return L2_PALETTE.get(_l2(code), "#888888")
 
-
 def _name(code: int) -> str:
     return SHORT_NAMES.get(int(code), str(code))
 
@@ -922,10 +921,10 @@ def event_class_breakdown(
     meta: dict,
     *,
     codes: tuple[int, ...] = DISTURBANCE_CODES,
-    figsize: tuple[float, float] = (7, 3.0),
+    figsize: tuple[float, float] = (6, 2),
     dpi: int = 130,
     cmap: str = "tab10",
-    title: str | None = "Disturbance events in the subset",
+    title: str | None = "Disturbance events in the dataset",
 ) -> plt.Figure:
     """Bar chart of *event* counts per disturbance code.
 
@@ -945,8 +944,9 @@ def event_class_breakdown(
     have = {int(r["label"]): int(r["n"]) for r in counts.iter_rows(named=True)}
     n_per_code = [have.get(int(c), 0) for c in codes]
     names = [classes.get(int(c), str(c)).replace("Forestry ", "") for c in codes]
-    cm = plt.get_cmap(cmap, max(4, len(codes)))
-    colors = [cm(i) for i in range(len(codes))]
+    # cm = plt.get_cmap(cmap, max(4, len(codes)))
+    # colors = [cm(i) for i in range(len(codes))]
+    colors = [_color(c) for c in codes]
 
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     bars = ax.barh(range(len(codes)), n_per_code,
@@ -1229,6 +1229,226 @@ def token_pca_grid(
     )
 
 
+# ---------------------------------------------------------------------------
+# Baseline (handcrafted) index viewer — twin of `token_pca_grid` for the
+# per-pixel NDVI / NDMI / NDWI baseline path.
+# ---------------------------------------------------------------------------
+
+# Physical-range stretch used for the false-colour composite + per-index
+# heatmap. Wide enough to span typical forest / disturbed / water values
+# without saturating either end.
+#   NDVI: bare/burnt soil sits near 0, dense canopy near 0.85.
+#   NDMI: dry canopy near 0, moist canopy ≈0.5, water turns positive.
+#   NDWI: forest is strongly negative (B08 ≫ B03), water positive.
+INDEX_STRETCH: dict[str, tuple[float, float]] = {
+    "NDVI": (-0.2, 0.9),
+    "NDMI": (-0.4, 0.6),
+    "NDWI": (-0.8, 0.4),
+}
+
+# Per-index perceptual cmap used by the single-frame explainer.
+INDEX_CMAPS: dict[str, str] = {
+    "NDVI": "RdYlGn",
+    "NDMI": "BrBG",
+    "NDWI": "Blues",
+}
+
+# LaTeX formula strings used as panel sub-titles in the explainer.
+INDEX_FORMULAS: dict[str, str] = {
+    "NDVI": r"$(B_{08} - B_{04})\,/\,(B_{08} + B_{04})$",
+    "NDMI": r"$(B_{08} - B_{11})\,/\,(B_{08} + B_{11})$",
+    "NDWI": r"$(B_{03} - B_{08})\,/\,(B_{03} + B_{08})$",
+}
+
+# One-line, plain-English description of what each index measures.
+INDEX_MEANINGS: dict[str, str] = {
+    "NDVI": "vegetation greenness",
+    "NDMI": "canopy moisture",
+    "NDWI": "open-water presence",
+}
+
+# Default channel order for the false-colour composite.
+DEFAULT_INDEX_CHANNELS: tuple[str, str, str] = ("NDVI", "NDMI", "NDWI")
+
+
+def index_composite_image(
+    index_map: np.ndarray,
+    *,
+    channels: tuple[str, str, str] = DEFAULT_INDEX_CHANNELS,
+    stretch: dict[str, tuple[float, float]] | None = None,
+) -> np.ndarray:
+    """False-colour RGB from a ``(H, W, 3)`` map of NDVI / NDMI / NDWI.
+
+    The last axis of ``index_map`` is assumed to follow the same order
+    as ``channels``. Each channel is independently linear-stretched with
+    the ``stretch`` table (default :data:`INDEX_STRETCH`) and clipped to
+    [0, 1]. Returns ``(H, W, 3)`` float32 in [0, 1].
+    """
+    if index_map.ndim != 3 or index_map.shape[-1] < 3:
+        raise ValueError(
+            f"index_map must be (H, W, >=3), got {index_map.shape}"
+        )
+    s = stretch if stretch is not None else INDEX_STRETCH
+    H, W = index_map.shape[:2]
+    rgb = np.empty((H, W, 3), dtype=np.float32)
+    for ci, name in enumerate(channels):
+        lo, hi = s[name]
+        rgb[..., ci] = np.clip(
+            (index_map[..., ci] - lo) / max(hi - lo, 1e-9), 0.0, 1.0,
+        )
+    return rgb
+
+
+def baseline_index_grid(
+    ts: TimeSeries,
+    *,
+    n_patches: int = 6,
+    frame_indices: Iterable[int] | None = None,
+    fig_width: float = 14.0,
+    channels: tuple[str, str, str] = DEFAULT_INDEX_CHANNELS,
+    stretch: dict[str, tuple[float, float]] | None = None,
+    title: str | None = None,
+    show_swim_bubbles: bool | None = None,
+) -> plt.Figure:
+    """RGB strip + per-frame NDVI/NDMI/NDWI false-colour strip below it.
+
+    Twin of :func:`token_pca_grid` for the **baseline** path. Each panel
+    on the lower row is one frame's dense ``(252, 252)`` NDVI / NDMI /
+    NDWI maps mapped to (R, G, B) with a fixed physical-range stretch,
+    so colours can be compared *across* frames and *across* samples.
+
+    The classifier itself only ever sees the centre pixel — this strip
+    is purely an intuition aid for what each index measures and how it
+    moves around a disturbance event.
+    """
+    from .dense import index_maps
+
+    s = stretch if stretch is not None else INDEX_STRETCH
+
+    def _panel_fn(t: TimeSeries, i: int) -> np.ndarray:
+        m = index_maps(t, i, indices=channels)
+        img = index_composite_image(m, channels=channels, stretch=s)
+        # Match the RGB strip's NODATA fill: paint any pixel whose
+        # underlying 10 m bands are all zero with the same neutral gray.
+        s10_raw = t.s2_10m(i, as_reflectance=False)
+        nodata = (s10_raw == 0).all(axis=0)
+        if nodata.any():
+            img[nodata] = _PATCH_GRAY
+        return img
+
+    row_label = (
+        f"{channels[0]}→R   {channels[1]}→G   {channels[2]}→B"
+    )
+    return sample_timeline(
+        ts,
+        n_patches=n_patches,
+        highlight=frame_indices,
+        mode="rgb",
+        fig_width=fig_width,
+        title=title,
+        show_swim_bubbles=show_swim_bubbles,
+        extra_rows=[ExtraRow(
+            name=row_label,
+            panel_fn=_panel_fn,
+            overlay_center_marker=True,
+        )],
+    )
+
+
+def baseline_index_explainer(
+    ts: TimeSeries,
+    frame_idx: int,
+    *,
+    indices: tuple[str, ...] = DEFAULT_INDEX_CHANNELS,
+    figsize: tuple[float, float] = (14, 3.6),
+    dpi: int = 130,
+    rgb_clip_pct: tuple[float, float] = (2.0, 98.0),
+    title: str | None = None,
+) -> plt.Figure:
+    """Single-frame breakdown: RGB + one heatmap per normalized index.
+
+    Companion to :func:`baseline_index_grid` — shows what each input
+    index measures on a *single* frame before the multi-frame strip
+    below. Each panel carries the index name, its formula, and a
+    colorbar with the absolute (cross-frame) stretch used by the
+    composite viewer above. The annotated centre pixel is circled in
+    every panel so students can connect the dense map to the single
+    15-d vector the classifier actually consumes.
+    """
+    from .dense import index_maps
+
+    n_panels = 1 + len(indices)
+    fig, axes = plt.subplots(1, n_panels, figsize=figsize, dpi=dpi)
+
+    # ---- Panel 0: RGB true-colour with the same percentile stretch the
+    # sample_timeline strip uses. Self-contained so we don't depend on
+    # the private _draw_s2_thumbnails helper.
+    s10 = ts.s2_10m(frame_idx, as_reflectance=False).astype(np.float32)
+    rgb = np.stack([s10[2], s10[1], s10[0]], axis=0)        # B04 B03 B02
+    valid = rgb[0] > 0
+    if valid.any():
+        flat = rgb[:, valid].reshape(3, -1)
+        lo = np.percentile(flat, rgb_clip_pct[0], axis=1)
+        hi = np.maximum(
+            np.percentile(flat, rgb_clip_pct[1], axis=1), lo + 1e-6,
+        )
+    else:
+        lo = np.zeros(3, dtype=np.float32)
+        hi = np.ones(3, dtype=np.float32)
+    rgb_img = np.clip(
+        (rgb - lo[:, None, None]) / (hi - lo)[:, None, None], 0.0, 1.0,
+    ).transpose(1, 2, 0)
+    rgb_img = np.where(
+        (~valid)[..., None], _PATCH_GRAY, rgb_img,
+    )
+    axes[0].imshow(rgb_img, interpolation="nearest")
+    axes[0].set_title(
+        f"RGB (B04 B03 B02)\n{ts.dates[frame_idx]}",
+        fontsize=10, color="#222222",
+    )
+
+    # ---- Per-index heatmap panels with absolute stretch + colorbar.
+    maps = index_maps(ts, frame_idx, indices=tuple(indices))
+    for k, name in enumerate(indices):
+        ax = axes[1 + k]
+        lo_i, hi_i = INDEX_STRETCH[name]
+        im = ax.imshow(
+            maps[..., k],
+            cmap=INDEX_CMAPS[name],
+            vmin=lo_i, vmax=hi_i,
+            interpolation="nearest",
+        )
+        ax.set_title(
+            f"{name}  —  {INDEX_MEANINGS[name]}\n{INDEX_FORMULAS[name]}",
+            fontsize=10, color="#222222",
+        )
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=8, length=0)
+        cbar.outline.set_visible(False)
+
+    # ---- Cosmetics shared across all panels.
+    for ax in axes:
+        ax.set_xticks([]); ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_color("#cccccc")
+            sp.set_linewidth(0.5)
+        # Annotated centre pixel — same convention as sample_timeline.
+        h, w = 252, 252
+        ax.add_patch(mpatches.Circle(
+            (w // 2, h // 2),
+            radius=6.0,
+            fill=False,
+            edgecolor="white",
+            linewidth=1.4,
+            zorder=5,
+        ))
+
+    if title:
+        fig.suptitle(title, fontsize=11, color="#111111", y=1.02)
+    fig.tight_layout()
+    return fig
+
+
 def _seasonal_cmap():
     """Cyclic cold-blue → flower-pink → leaf-green → pumpkin-orange palette.
 
@@ -1252,6 +1472,8 @@ def embedding_trajectory(
     ts: TimeSeries,
     pca_state: dict,
     *,
+    coord: tuple[int, int] = (7, 7),
+    pc: tuple[int, int] = (0, 1),
     figsize: tuple[float, float] = (13, 5.3),
     dpi: int = 130,
     marker_size: float = 110,
@@ -1282,10 +1504,13 @@ def embedding_trajectory(
     from IPython.display import display
 
     mean_vec = np.asarray(pca_state["mean"], dtype=np.float32)
-    comps = np.asarray(pca_state["components"], dtype=np.float32)[:2]   # (2, 384)
-    emb_mean = np.stack([ts.tm_emb(i).mean(axis=(0, 1)) for i in range(len(ts))])
-    proj = (emb_mean - mean_vec) @ comps.T          # (T, 2)
-
+    print(np.asarray(pca_state["components"], dtype=np.float32).shape)
+    comps = np.asarray(pca_state["components"], dtype=np.float32)[list(pc)]   # (2, 384)
+    # emb_mean = np.stack([ts.tm_emb(i).mean(axis=(0, 1)) for i in range(len(ts))])
+    # proj = (emb_mean - mean_vec) @ comps.T          # (T, 2)
+    emb_annotation = np.stack([ts.tm_emb(i)[*coord] for i in range(len(ts))])
+    proj = (emb_annotation - mean_vec) @ comps.T          # (T, 2)
+    
     ev = ts.event_period()
     event_date = ev["start"] if ev is not None else None
     dates_iso = list(ts.dates)

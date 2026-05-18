@@ -77,6 +77,25 @@ the requirements manually:
 pip install -r "Day 4/Track 2/TerraTorch-Workflows/requirements.txt"
 ```
 
+### Workshop data — `03_Forest_Disturbance_Monitoring`
+
+The forest-disturbance notebook reads a ~15 GB data bundle that ships
+separately from this repo. Download and unzip it from the workshop S3
+bucket before launching the notebook (~5 minutes total):
+
+```bash
+# Download and unzip the data for 03_Forest_Disturbance_Monitoring
+# May take about 5 minutes in total
+cd ~
+aws s3 cp s3://enw-04241552-kx1nks-shared/data/workshop_bundle.zip .
+unzip -q workshop_bundle.zip -d workshop_data
+```
+
+This produces `~/workshop_data/workshop_bundle/{data,audit}/`. The
+notebook's Section 0 auto-detects this path on the SageMaker VM; see
+the comments in the Setup cell to override via `WORKSHOP_DATA_ROOT` if
+you unzipped the bundle elsewhere.
+
 ---
 
 ## References
