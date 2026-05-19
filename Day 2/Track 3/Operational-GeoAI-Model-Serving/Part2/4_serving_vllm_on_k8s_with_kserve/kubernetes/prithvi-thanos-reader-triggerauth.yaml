@@ -1,0 +1,13 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: thanos-reader-trigger-auth
+  namespace: prithvi-kserve
+spec:
+  secretTargetRef:
+    - key: token
+      name: thanos-reader-sa-token
+      parameter: bearerToken
+    - key: ca.crt
+      name: thanos-reader-sa-token
+      parameter: ca
