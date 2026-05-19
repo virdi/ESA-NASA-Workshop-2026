@@ -1,0 +1,4 @@
+geostudio
+pandas
+urllib3
+ipykernel
