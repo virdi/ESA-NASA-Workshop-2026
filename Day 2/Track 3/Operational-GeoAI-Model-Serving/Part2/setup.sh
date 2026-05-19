@@ -26,6 +26,6 @@ hf download "${HF_MODEL_REPO}" config_deploy.yaml --local-dir "${SCRIPT_DIR}/${M
 hf download "${HF_MODEL_REPO}" state_dict.ckpt --local-dir "${SCRIPT_DIR}/${MODEL_DIR}"
 hf download "${HF_BURNSCARS_REPO}" park_fire_scaled.tif --local-dir "${SCRIPT_DIR}/samples"
 
-python -m ipykernel install --user --force \
+python -m ipykernel install --user \
     --name "${KERNEL_NAME}" \
     --display-name "${KERNEL_DISPLAY_NAME}"

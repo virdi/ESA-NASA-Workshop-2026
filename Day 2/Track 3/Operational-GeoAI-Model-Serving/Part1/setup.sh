@@ -19,6 +19,6 @@ source "${SCRIPT_DIR}/${VENV_DIR}/bin/activate"
 
 uv pip install -r "${SCRIPT_DIR}/requirements.txt"
 
-python -m ipykernel install --user --force \
+python -m ipykernel install --user \
     --name "${KERNEL_NAME}" \
     --display-name "${KERNEL_DISPLAY_NAME}"

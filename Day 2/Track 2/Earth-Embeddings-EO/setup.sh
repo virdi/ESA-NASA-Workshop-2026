@@ -31,6 +31,6 @@ hf download zterrabyte/eurosat-gitrsclip-embeddings --repo-type dataset eurosat_
 hf download zterrabyte/levircd-changeclip-embeddings --repo-type dataset levircd_changeclip_pairs.npz
 hf download FuxunTB/changetx-text-change-demo --repo-type dataset
 
-python -m ipykernel install --user --force \
+python -m ipykernel install --user \
     --name "${KERNEL_NAME}" \
     --display-name "${KERNEL_DISPLAY_NAME}"
