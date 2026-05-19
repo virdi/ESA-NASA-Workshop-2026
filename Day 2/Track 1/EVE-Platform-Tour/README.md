@@ -78,7 +78,7 @@ The notebook uses these packages (install once with the commented `%pip` cell):
 
 EVE is an open, agentic platform for Earth Observation and Earth Sciences, funded and supported by **ESA Φ-lab**.
 
-- **Public launch**: Q3 2026. [Register to be notified](https://eve.philab.esa.int/launch) on the official ESA Φ-lab page.
+- **Public launch**: Q2 2026. [Register to be notified](https://eve.philab.esa.int/launch) on the official ESA Φ-lab page.
 - **Open source today**: models, data, and pipelines are freely available at [huggingface.co/eve-esa](https://huggingface.co/eve-esa). The tool layer is open source at [github.com/eve-esa/mcp-tool-registry](https://github.com/eve-esa/mcp-tool-registry).
 - **Early access / contribute**: to get a preview of the hosted deployment or contribute to the project before the public launch, reach out to us directly:
   - [antonio.lopez@picampus-school.com](mailto:antonio.lopez@picampus-school.com)
