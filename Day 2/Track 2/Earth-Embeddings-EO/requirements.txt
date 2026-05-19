@@ -1,0 +1,46 @@
+# Earth Embeddings for EO — Day 2 / Track 2 — CPU-only install
+# Union of all pip dependencies across notebooks 0-5, with torch + torchvision pulled
+# from the PyTorch CPU index. This is what the workshop targets: participants run on
+# Colab CPU or their own laptop, no GPU required.
+#
+# Install:
+#     pip install -r requirements.txt
+#
+# For GPU machines (CUDA 12.1+), use requirements-gpu.txt instead.
+
+# Pull CPU-only torch wheels from PyTorch's own index, fall back to PyPI for everything else.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# --- ML / EO foundation-model stack --------------------------------------------
+# Notebooks 0, 2: timm for ResNet-50 (EuroSAT) and DINOv3 SAT-493M
+timm
+# Notebooks 0, 3, 4, 5: HuggingFace datasets (EuroSAT, LEVIR-CD)
+datasets
+# Notebooks 3, 4, 5: transformers for Git-RSCLIP (SigLIP-style CLIP).
+# SiglipTokenizer needs both sentencepiece *and* protobuf at import time;
+# Colab preinstalls protobuf but a fresh venv does not.
+transformers
+sentencepiece
+protobuf
+# Notebooks 1, 2, 3, 4, 5: hf_hub_download (model weights + precomputed embedding pools)
+huggingface_hub
+# Notebook 1: Prithvi-EO-2.0 MAE — einops for patch ops, tifffile for HLS GeoTIFF reads
+einops
+tifffile
+# Notebook 4: FAISS-IVF ANN index for the 5,400-vector retrieval benchmark
+faiss-cpu
+
+# --- torch (CPU build) ---------------------------------------------------------
+# The +cpu local-version suffix forces pip to take wheels from the index above
+# rather than the default CUDA-bundled wheels on PyPI (which pull ~2 GB of unused
+# nvidia-* libraries on a CPU machine).
+torch
+torchvision
+
+# --- preinstalled on Colab; listed for non-Colab installs ----------------------
+numpy
+matplotlib
+scikit-learn
+scipy
+Pillow
+tqdm
