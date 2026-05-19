@@ -87,7 +87,7 @@ hf download "${PRITHVI_WXC_ROLLOUT_REPO}" \
 
 # 6. Pull workshop checkpoints from S3 (shared bucket).
 mkdir -p "${CHECKPOINTS_DIR}"
-aws s3 sync "${CHECKPOINTS_S3}" "${CHECKPOINTS_DIR}/"
+aws s3 sync --size-only "${CHECKPOINTS_S3}" "${CHECKPOINTS_DIR}/"
 
 # Note: GraphCast pulls its weights and sample data from the public
 # gs://dm_graphcast bucket from inside graphcast_demo.ipynb. No pre-download

@@ -9,7 +9,7 @@ KERNEL_DISPLAY_NAME="TerraTorch Workflows"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DATA_S3="s3://enw-04241552-kx1nks-shared/data/workshop_bundle.zip"
-DATA_ROOT="${WORKSHOP_DATA_ROOT:-${HOME}/workshop_data}"
+DATA_ROOT="${SCRIPT_DIR}"
 BUNDLE_DIR="${DATA_ROOT}/workshop_bundle"
 
 if ! command -v uv >/dev/null 2>&1; then
