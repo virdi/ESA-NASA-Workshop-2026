@@ -72,6 +72,8 @@ disown
 
 deactivate
 
+curl -fsSL https://opencode.ai/install | bash
+
 cd "${SCRIPT_DIR}"
 
 uv sync --frozen
