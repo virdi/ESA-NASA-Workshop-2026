@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: thanos-reader-sa-token
+  namespace: prithvi-kserve
+  annotations:
+    kubernetes.io/service-account.name: thanos-reader

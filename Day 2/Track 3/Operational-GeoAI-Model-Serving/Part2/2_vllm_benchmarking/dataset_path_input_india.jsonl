@@ -1,0 +1,1 @@
+{"prompt":{"data": {"data": "/home/sagemaker-user/ESA-NASA-Workshop-2026/Day 2/Track 3/Operational-GeoAI-Model-Serving/Part2/samples/India_900498_S2Hand.tif","data_format": "path","out_data_format": "b64_json","indices": [1, 2, 3, 8, 11, 12]},"priority": 0,"softmax": false}}
