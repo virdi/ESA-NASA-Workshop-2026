@@ -188,7 +188,8 @@ After loading assets, verify they appear correctly in the Studio UI:
    - **Dataset Factory** section - confirm both datasets are visible
    - **Fine-tuning Studio (Base Model)** section - confirm both backbones are available
 3. **Templates** section - confirm both templates are loaded
-4. Check that assets are created by the system user with a default (Studio.Dev@dev.com) (visible to all users)
+4. Check that assets are created by the system user with a default (Studio.Dev@dev.com)
+5. These assets should be visible to all users
 
 ### User Account Setup
 
