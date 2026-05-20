@@ -85,5 +85,5 @@ Must include:
 ### Notes
 - For flood/burn: prefer `requested_date` + `selected_date`.
 - For crop: prefer `requested_dates` + `selected_dates`.
-- `tool_calls[].outputs` should include raw tool outputs (e.g., `clear_pct`, `alternatives`, offsets, `job_id`), even though these are not shown to the user.
+- `tool_calls[].outputs` should include raw tool outputs (e.g., `clear_pct`, `alternatives`, offsets), even though these are not shown to the user.
 

@@ -41,10 +41,8 @@ Auxiliary dataset signals (used only when task type is not specified; can be cal
 - `query_fire_history(bbox, start_date, end_date)`
 - `query_crop_landcover(bbox, year?)`
 
-Prithvi inference (async):
-- `run_prithvi_inference(task_type, bbox, date | (date_range + dates[3]))` → job submission (`job_id`)
-- `get_prithvi_job_status(job_id)` → `running | finished | failed`
-- `get_prithvi_results(job_id)` → result URLs + summary stats
+Prithvi inference (synchronous):
+- `run_prithvi_inference(bbox, date | (date_range + dates[3]))` → result under usecase key (e.g. `flood`), containing `s3_link` and `predictions` (GeoJSON)
 
 ### Compute/data environment assumptions
 - Runs in a GPU server environment with CUDA; Python + PyTorch + terratorch.
@@ -113,10 +111,8 @@ Prithvi inference (async):
 - Announce the resolved task, location, and imagery date(s) being used; proceed immediately unless the user objects.
 
 7) **Run inference and retrieve results**
-- Submit job via `run_prithvi_inference`.
-- Poll with `get_prithvi_job_status` until `finished` or `failed`.
-- If failed: report failure and stop.
-- Retrieve outputs via `get_prithvi_results`.
+- Call `run_prithvi_inference`; the result is returned synchronously under the usecase key (e.g. `flood`).
+- If the response contains `status: failed` or no usecase key: report failure and stop.
 
 8) **Present results (user-facing narrative)**
 - Provide brief final narrative including:
@@ -126,7 +122,7 @@ Prithvi inference (async):
 - Do not include raw bbox coordinates, tool payloads, or internal IDs in the narrative.
 
 9) **Emit host-side JSON log (not user-visible)**
-- Return a deterministic JSON log per `output.md`, including tool calls, selected imagery, job_id, result URLs, and warnings.
+- Return a deterministic JSON log per `output.md`, including tool calls, selected imagery, result URLs, and warnings.
 
 ## OUTPUT FORMAT
 ### User-facing

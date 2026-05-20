@@ -8,12 +8,11 @@ from akd_ext.mcp import mcp_tool
 from pydantic import ConfigDict, Field
 
 PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8080")
+MODEL_SERVER_TIMEOUT = int(os.environ.get("MODEL_SERVER_TIMEOUT", "300"))
 
 
 class RunPrithviInferenceInput(InputSchema):
-    """Parameters for Prithvi-EO inference job submission."""
-    # Defined directly in the inference container using the `USECASE` env variable
-    # task_type: str = Field(..., description="'flood' | 'burn' | 'crop'")
+    """Parameters for Prithvi-EO inference."""
     bounding_box: list[float] = Field(..., description="[west, south, east, north]")
     date: str | None = Field(default=None, description="YYYY-MM-DD (required for flood/burn)")
     date_range: dict | None = Field(
@@ -27,9 +26,13 @@ class RunPrithviInferenceInput(InputSchema):
 
 
 class RunPrithviInferenceOutput(OutputSchema):
-    """Inference job submission result with job_id."""
-    model_config = ConfigDict(extra="ignore")
-    job_id: str | None = None
+    """Prithvi-EO inference result.
+
+    On success, contains the result under the usecase key (e.g. 'flood'), with
+    s3_link (GeoTIFF path) and predictions (GeoJSON FeatureCollection).
+    On failure, status='failed' and message describes the error.
+    """
+    model_config = ConfigDict(extra="allow")
     status: str = Field(default="")
     message: str = Field(default="")
 
@@ -40,16 +43,6 @@ def _run_prithvi_inference(
     date_range: dict | None,
     dates: list[str] | None,
 ) -> dict:
-    """Submit an async Prithvi-EO inference job to the local inference server."""
-    # if task_type not in ("flood", "burn", "crop"):
-    #     return {
-    #         "message": f"Unsupported task_type '{task_type}'. Must be flood, burn, or crop."
-    #     }
-    # if task_type in ("flood", "burn") and not date:
-    #     return {"message": f"'date' is required for {task_type} task."}
-    # if task_type == "crop" and (not date_range or not dates or len(dates) != 3):
-    #     return {"message": "Crop task requires date_range and exactly 3 dates."}
-
     payload = {
         "bounding_box": bounding_box,
         "date": date,
@@ -61,24 +54,20 @@ def _run_prithvi_inference(
         resp = requests.post(
             f"{PRITHVI_SERVER_URL}/invocations",
             json=payload,
-            timeout=30,
+            timeout=MODEL_SERVER_TIMEOUT,
         )
-
-        print(f"DEBUG: prithiv invocation response: {resp.json().keys()}")
-        
         resp.raise_for_status()
         return resp.json()
-        
     except requests.RequestException as e:
-        return {"status": "failed", "message": f"Job submission failed: {e}"}
+        return {"status": "failed", "message": f"Inference failed: {e}"}
 
 
 @mcp_tool
 class RunPrithviInferenceTool(BaseTool[RunPrithviInferenceInput, RunPrithviInferenceOutput]):
-    """Submit an async Prithvi-EO inference job for flood detection, burn-scar mapping, or crop classification.
+    """Run Prithvi-EO inference for flood detection, burn-scar mapping, or crop classification.
 
-    Returns a job_id. Poll status with get_prithvi_job_status, then retrieve
-    results with get_prithvi_results.
+    Returns the result directly under the usecase key (e.g. 'flood'), containing
+    s3_link (GeoTIFF on S3) and predictions (GeoJSON FeatureCollection).
     """
 
     input_schema = RunPrithviInferenceInput

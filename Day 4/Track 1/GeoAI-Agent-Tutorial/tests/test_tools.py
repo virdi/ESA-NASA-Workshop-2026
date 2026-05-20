@@ -48,16 +48,6 @@ from tools.hls.check_hls_availability import (
     CheckHLSAvailabilityTool,
     _check_hls_availability,
 )
-from tools.prithvi.get_prithvi_job_status import (
-    GetPrithviJobStatusInput,
-    GetPrithviJobStatusTool,
-    _get_prithvi_job_status,
-)
-from tools.prithvi.get_prithvi_results import (
-    GetPrithviResultsInput,
-    GetPrithviResultsTool,
-    _get_prithvi_results,
-)
 from tools.prithvi.run_prithvi_inference import (
     RunPrithviInferenceInput,
     RunPrithviInferenceTool,
@@ -477,122 +467,27 @@ class TestQuerySurfaceWaterFunction:
 # ---------------------------------------------------------------------------
 
 class TestRunPrithviInferenceFunction:
-    def test_invalid_task_type(self):
-        result = _run_prithvi_inference("blizzard", BBOX, "2024-01-01", None, None)
-        assert "Unsupported task_type" in result["message"]
-
-    def test_flood_requires_date(self):
-        result = _run_prithvi_inference("flood", BBOX, None, None, None)
-        assert "'date' is required" in result["message"]
-
-    def test_burn_requires_date(self):
-        result = _run_prithvi_inference("burn", BBOX, None, None, None)
-        assert "'date' is required" in result["message"]
-
-    def test_crop_requires_date_range_and_dates(self):
-        result = _run_prithvi_inference("crop", BBOX, None, None, None)
-        assert "Crop task requires" in result["message"]
-
-    def test_crop_requires_exactly_three_dates(self):
-        date_range = {"start_date": "2024-01-01", "end_date": "2024-12-31"}
-        result = _run_prithvi_inference("crop", BBOX, None, date_range, ["2024-03-01", "2024-06-01"])
-        assert "Crop task requires" in result["message"]
-
-    def test_flood_successful_submission(self):
+    def test_flood_returns_usecase_key(self):
+        payload = {"flood": {"s3_link": "s3://bucket/predictions.tif", "predictions": {"type": "FeatureCollection", "features": []}}}
         with patch("tools.prithvi.run_prithvi_inference.requests.post",
-                   return_value=_mock_response(200, json_data={"job_id": "abc123", "status": "submitted", "message": "Job queued."})):
-            result = _run_prithvi_inference("flood", BBOX, "2024-01-01", None, None)
-        assert result["job_id"] == "abc123"
-        assert result["status"] == "submitted"
+                   return_value=_mock_response(200, json_data=payload)):
+            result = _run_prithvi_inference(BBOX, "2024-01-01", None, None)
+        assert "flood" in result
+        assert result["flood"]["s3_link"] == "s3://bucket/predictions.tif"
 
-    def test_crop_successful_submission(self):
+    def test_crop_returns_usecase_key(self):
         dates = ["2024-02-01", "2024-05-01", "2024-08-01"]
         date_range = {"start_date": "2024-01-01", "end_date": "2024-12-31"}
+        payload = {"crop": {"s3_link": "s3://bucket/crop.tif", "predictions": {"type": "FeatureCollection", "features": []}}}
         with patch("tools.prithvi.run_prithvi_inference.requests.post",
-                   return_value=_mock_response(200, json_data={"job_id": "xyz", "status": "submitted", "message": ""})):
-            result = _run_prithvi_inference("crop", BBOX, None, date_range, dates)
-        assert result["job_id"] == "xyz"
+                   return_value=_mock_response(200, json_data=payload)):
+            result = _run_prithvi_inference(BBOX, None, date_range, dates)
+        assert "crop" in result
 
     def test_http_error(self):
         with patch("tools.prithvi.run_prithvi_inference.requests.post",
                    return_value=_mock_response(500)):
-            result = _run_prithvi_inference("flood", BBOX, "2024-01-01", None, None)
-        assert "Job submission failed" in result["message"]
+            result = _run_prithvi_inference(BBOX, "2024-01-01", None, None)
+        assert "Inference failed" in result["message"]
 
 
-# ---------------------------------------------------------------------------
-# GetPrithviJobStatus
-# ---------------------------------------------------------------------------
-
-class TestGetPrithviJobStatusFunction:
-    def test_http_error(self):
-        with patch("tools.prithvi.get_prithvi_job_status.requests.get",
-                   return_value=_mock_response(500)):
-            result = _get_prithvi_job_status("job-123")
-        assert result["status"] == "failed"
-        assert "Status check failed" in result["message"]
-
-    def test_running_status(self):
-        with patch("tools.prithvi.get_prithvi_job_status.requests.get",
-                   return_value=_mock_response(200, json_data={"status": "running", "message": ""})):
-            result = _get_prithvi_job_status("job-123")
-        assert result["status"] == "running"
-
-    def test_finished_status(self):
-        with patch("tools.prithvi.get_prithvi_job_status.requests.get",
-                   return_value=_mock_response(200, json_data={"status": "finished", "message": ""})):
-            result = _get_prithvi_job_status("job-123")
-        assert result["status"] == "finished"
-
-    def test_job_id_used_in_url(self):
-        with patch("tools.prithvi.get_prithvi_job_status.requests.get",
-                   return_value=_mock_response(200, json_data={"status": "running", "message": ""})) as mock_get:
-            _get_prithvi_job_status("unique-job-id-99")
-        called_url = mock_get.call_args[0][0]
-        assert "unique-job-id-99" in called_url
-
-
-# ---------------------------------------------------------------------------
-# GetPrithviResults
-# ---------------------------------------------------------------------------
-
-class TestGetPrithviResultsFunction:
-    def test_http_error(self):
-        with patch("tools.prithvi.get_prithvi_results.requests.get",
-                   return_value=_mock_response(500)):
-            result = _get_prithvi_results("job-123")
-        assert "Results retrieval failed" in result["message"]
-
-    def test_flood_results(self):
-        payload = {
-            "task_type": "flood",
-            "result_urls": ["/outputs/flood_abc.tif"],
-            "summary": {"area_hectares": 42.5},
-            "message": "Flood detection complete.",
-        }
-        with patch("tools.prithvi.get_prithvi_results.requests.get",
-                   return_value=_mock_response(200, json_data=payload)):
-            result = _get_prithvi_results("job-123")
-        assert result["task_type"] == "flood"
-        assert result["summary"]["area_hectares"] == 42.5
-        assert len(result["result_urls"]) == 1
-
-    def test_crop_results(self):
-        payload = {
-            "task_type": "crop",
-            "result_urls": ["/outputs/crop_abc.tif"],
-            "summary": {"area_hectares": 100.0, "per_class_hectares": {"Corn": 60.0}},
-            "message": "Crop classification complete.",
-        }
-        with patch("tools.prithvi.get_prithvi_results.requests.get",
-                   return_value=_mock_response(200, json_data=payload)):
-            result = _get_prithvi_results("job-456")
-        assert result["task_type"] == "crop"
-        assert result["summary"]["per_class_hectares"]["Corn"] == 60.0
-
-    def test_job_id_used_in_url(self):
-        with patch("tools.prithvi.get_prithvi_results.requests.get",
-                   return_value=_mock_response(200, json_data={})) as mock_get:
-            _get_prithvi_results("special-job-77")
-        called_url = mock_get.call_args[0][0]
-        assert "special-job-77" in called_url
