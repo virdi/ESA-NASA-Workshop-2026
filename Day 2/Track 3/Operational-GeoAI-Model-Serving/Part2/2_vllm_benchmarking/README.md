@@ -9,6 +9,13 @@ Both drive the running vLLM server with the datasets shipped in this directory (
 
 > The vLLM server from Step 1 must still be running in its own terminal for any of the commands below to work. Run these benchmarking commands in a separate terminal.
 
+Open a terminal and source the virtualenv
+
+```bash
+cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/
+source .venv/bin/activate
+```
+
 ```bash
 cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/2_vllm_benchmarking
 ```
