@@ -4,6 +4,13 @@ This step prepares the checkpoint to be served via vLLM: produce a `config.json`
 
 ## Step 0: Get the model checkpoint and config
 
+Open a terminal and source the virtualenv
+
+```bash
+cd ~/ESA-NASA-Workshop-2026/Day\ 2/Track\ 3/Operational-GeoAI-Model-Serving/Part2/
+source .venv/bin/activate
+```
+
 If you don't already have the Prithvi flood-segmentation checkpoint and its TerraTorch config on disk, grab them from the pre-created HuggingFace model repository:
 
 ```bash
