@@ -12,8 +12,9 @@ PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8080
 
 class RunPrithviInferenceInput(InputSchema):
     """Parameters for Prithvi-EO inference job submission."""
-    task_type: str = Field(..., description="'flood' | 'burn' | 'crop'")
-    bbox: list[float] = Field(..., description="[west, south, east, north]")
+    # Defined directly in the inference container using the `USECASE` env variable
+    # task_type: str = Field(..., description="'flood' | 'burn' | 'crop'")
+    bounding_box: list[float] = Field(..., description="[west, south, east, north]")
     date: str | None = Field(default=None, description="YYYY-MM-DD (required for flood/burn)")
     date_range: dict | None = Field(
         default=None,
@@ -34,39 +35,40 @@ class RunPrithviInferenceOutput(OutputSchema):
 
 
 def _run_prithvi_inference(
-    task_type: str,
-    bbox: list[float],
+    bounding_box: list[float],
     date: str | None,
     date_range: dict | None,
     dates: list[str] | None,
 ) -> dict:
     """Submit an async Prithvi-EO inference job to the local inference server."""
-    if task_type not in ("flood", "burn", "crop"):
-        return {
-            "message": f"Unsupported task_type '{task_type}'. Must be flood, burn, or crop."
-        }
-    if task_type in ("flood", "burn") and not date:
-        return {"message": f"'date' is required for {task_type} task."}
-    if task_type == "crop" and (not date_range or not dates or len(dates) != 3):
-        return {"message": "Crop task requires date_range and exactly 3 dates."}
+    # if task_type not in ("flood", "burn", "crop"):
+    #     return {
+    #         "message": f"Unsupported task_type '{task_type}'. Must be flood, burn, or crop."
+    #     }
+    # if task_type in ("flood", "burn") and not date:
+    #     return {"message": f"'date' is required for {task_type} task."}
+    # if task_type == "crop" and (not date_range or not dates or len(dates) != 3):
+    #     return {"message": "Crop task requires date_range and exactly 3 dates."}
 
     payload = {
-        "task_type": task_type,
-        "bbox": bbox,
+        "bounding_box": bounding_box,
         "date": date,
         "date_range": date_range,
         "dates": dates,
     }
 
     try:
-        print(f"DEBUG: RUNNING AGAINST: {PRITHVI_SERVER_URL}")
         resp = requests.post(
             f"{PRITHVI_SERVER_URL}/invocations",
             json=payload,
             timeout=30,
         )
+
+        print(f"DEBUG: prithiv invocation response: {resp.json().keys()}")
+        
         resp.raise_for_status()
         return resp.json()
+        
     except requests.RequestException as e:
         return {"status": "failed", "message": f"Job submission failed: {e}"}
 
@@ -85,8 +87,7 @@ class RunPrithviInferenceTool(BaseTool[RunPrithviInferenceInput, RunPrithviInfer
     async def _arun(self, params: RunPrithviInferenceInput) -> RunPrithviInferenceOutput:
         result = await asyncio.to_thread(
             _run_prithvi_inference,
-            params.task_type,
-            params.bbox,
+            params.bounding_box,
             params.date,
             params.date_range,
             params.dates,
