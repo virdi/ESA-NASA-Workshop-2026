@@ -1,0 +1,41 @@
+[project]
+name = "geoai-agent-tutorial"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "akd-ext @ git+https://github.com/nasa-impact/akd-ext.git@develop",
+    "earthaccess>=0.12.0",
+    "gradio>=6.14.0",
+    "pandas>=2.0.0",
+    "pydantic-ai>=1.94.0",
+    "pydantic-ai-backend>=0.2.6",
+    "python-dotenv>=1.0.0",
+    "pystac-client>=0.8.0",
+    "requests>=2.32.0",
+    "mistralai>=1.0.0,<2.0.0",
+    "ipykernel>=7.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.uv]
+# akd-ext pins fastmcp<3.2.4 but pydantic-ai>=1.94.0 needs fastmcp>=3.2.4.
+# We override to allow the newer fastmcp. akd-ext's MCP server (fastmcp usage)
+# is not used in this project — only BaseTool and PydanticAIBaseAgent are needed.
+override-dependencies = [
+    "fastmcp>=3.2.4",
+    # wrapt>=1.14 is required for Python 3.12+ (formatargspec was removed).
+    # A transitive dep pulled in 1.12.1; this forces the compatible version.
+    "wrapt>=1.14",
+]
