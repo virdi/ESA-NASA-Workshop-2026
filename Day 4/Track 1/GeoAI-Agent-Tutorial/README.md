@@ -15,6 +15,15 @@ Install [uv](https://docs.astral.sh/uv/) if you don't have it, then from this di
 uv sync
 ```
 
+> **Note:** A transitive dependency (`crawl4ai → unclecode-litellm`) installs into the same `litellm/` directory as the official package and can leave it in an inconsistent state. If notebook Section 5 fails with `ImportError: cannot import name 'ChatCompletionReasoningItem' from 'litellm.types.llms.openai'`, run:
+>
+> ```bash
+> uv pip uninstall unclecode-litellm
+> uv pip install --force-reinstall --no-deps litellm==1.83.0
+> ```
+>
+> `setup.sh` does this automatically on SageMaker.
+
 Create a `.env` file alongside the notebook with your OpenAI key (a `.env.example` is provided as a template):
 
 ```
