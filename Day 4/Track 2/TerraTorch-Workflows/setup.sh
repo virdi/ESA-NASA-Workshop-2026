@@ -15,7 +15,8 @@ EFS_DATA="${EFS_ROOT}/terratorch"
 
 DATA_S3="s3://enw-04241552-kx1nks-shared/data/workshop_bundle.zip"
 EFS_BUNDLE="${EFS_DATA}/workshop_bundle"
-BUNDLE_LINK="${SCRIPT_DIR}/workshop_bundle"
+DATA_LINK="${SCRIPT_DIR}/data"
+AUDIT_LINK="${SCRIPT_DIR}/audit"
 
 BURNSCARS_GDRIVE_ID="1yFDNlGqGPxkc9lh9l1O70TuejXAQYYtC"
 EMBEDDINGS_GDRIVE_ID="1SA-WVWVC0d-s5BRKrup54lp7oFmjbSkR"
@@ -47,7 +48,10 @@ if [ ! -d "${EFS_BUNDLE}" ]; then
     unzip -q "${EFS_DATA}/workshop_bundle.zip" -d "${EFS_DATA}"
     rm -f "${EFS_DATA}/workshop_bundle.zip"
 fi
-ln -sfn "${EFS_BUNDLE}" "${BUNDLE_LINK}"
+# Notebook 03 reads ../data and ../audit (auto-derived as siblings); point
+# those at the bundle's subdirs so no SageMaker-vs-local branching is needed.
+ln -sfn "${EFS_BUNDLE}/data" "${DATA_LINK}"
+ln -sfn "${EFS_BUNDLE}/audit" "${AUDIT_LINK}"
 
 # HLS Burn Scars dataset (notebooks 01, 02, 04). Skip if already extracted.
 if [ ! -d "${EFS_BURNSCARS}" ]; then
