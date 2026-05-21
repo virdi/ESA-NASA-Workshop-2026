@@ -66,6 +66,7 @@ cdsapi
 # --- Tracking + model IO ---
 wandb
 huggingface-hub
+requests-cache
 onnx
 onnxruntime
 ruamel.yaml

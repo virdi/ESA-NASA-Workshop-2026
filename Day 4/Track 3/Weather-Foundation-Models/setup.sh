@@ -6,13 +6,17 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TRACK_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PRITHVI_DIR="${TRACK_DIR}/Prithvi-WxC"
-DATA_DIR="${PRITHVI_DIR}/data"
+TRACK_DIR="${SCRIPT_DIR}"
+
+# Notebooks hardcode these EFS paths; setup.sh writes to the same locations
+# so the rollout/demo notebooks find the pre-staged files.
+EFS_CHECKPOINTS="${HOME}/user-default-efs/checkpoints"
+PRITHVI_ROOT="${EFS_CHECKPOINTS}/prithvi"
+DATA_DIR="${PRITHVI_ROOT}/data"
 WEIGHTS_DIR="${DATA_DIR}/weights"
 
 VENV_DIR="${TRACK_DIR}/.venv"
-REQUIREMENTS_FILE="${SCRIPT_DIR}/requirements.txt"
+REQUIREMENTS_FILE="${SCRIPT_DIR}/requirements/requirements.txt"
 
 PYTHON_VERSION="3.11"
 KERNEL_NAME="weather-fm"
@@ -22,7 +26,6 @@ PRITHVI_WXC_REPO="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M"
 PRITHVI_WXC_ROLLOUT_REPO="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M-rollout"
 
 CHECKPOINTS_S3="s3://enw-04241552-kx1nks-shared/data/checkpoints/"
-CHECKPOINTS_DIR="${TRACK_DIR}/data/checkpoints"
 
 export UV_YES=1
 
@@ -82,22 +85,21 @@ hf download "${PRITHVI_WXC_REPO}" \
 
 hf download "${PRITHVI_WXC_ROLLOUT_REPO}" config.yaml --local-dir "${DATA_DIR}"
 hf download "${PRITHVI_WXC_ROLLOUT_REPO}" \
-    prithvi.wxc.rollout.2300m.v1.pt \
+    prithvi.wxc.rollout.2300m.v1.bf16.pt \
     --local-dir "${WEIGHTS_DIR}"
 
-# 6. Pull workshop checkpoints from S3 (shared bucket).
-mkdir -p "${CHECKPOINTS_DIR}"
-aws s3 sync --size-only "${CHECKPOINTS_S3}" "${CHECKPOINTS_DIR}/"
-
-# Note: GraphCast pulls its weights and sample data from the public
-# gs://dm_graphcast bucket from inside graphcast_demo.ipynb. No pre-download
-# step here.
+# 6. Pull workshop checkpoints from S3 (GraphCast + AIFS) into the EFS path
+#    the GraphCast notebook reads from. The FMAifs notebook reads
+#    ../checkpoints/aifs_single_v0.2.1.ckpt relative to its own directory,
+#    so symlink ${TRACK_DIR}/checkpoints to the same EFS location.
+mkdir -p "${EFS_CHECKPOINTS}"
+aws s3 sync --size-only "${CHECKPOINTS_S3}" "${EFS_CHECKPOINTS}/"
+ln -sfn "${EFS_CHECKPOINTS}" "${TRACK_DIR}/checkpoints"
 
 echo
 echo "Setup complete."
-echo "  venv:    ${VENV_DIR}"
-echo "  kernel:  ${KERNEL_DISPLAY_NAME} (${KERNEL_NAME})"
-echo "  data:        ${DATA_DIR}"
-echo "  weights:     ${WEIGHTS_DIR}"
-echo "  checkpoints: ${CHECKPOINTS_DIR}"
+echo "  venv:        ${VENV_DIR}"
+echo "  kernel:      ${KERNEL_DISPLAY_NAME} (${KERNEL_NAME})"
+echo "  prithvi:     ${PRITHVI_ROOT}"
+echo "  checkpoints: ${EFS_CHECKPOINTS}"
 echo "Pick '${KERNEL_DISPLAY_NAME}' from the JupyterLab kernel picker."
