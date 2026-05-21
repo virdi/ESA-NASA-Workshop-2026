@@ -10,10 +10,16 @@ TRACK_DIR="${SCRIPT_DIR}"
 
 # Notebooks hardcode these EFS paths; setup.sh writes to the same locations
 # so the rollout/demo notebooks find the pre-staged files.
-EFS_CHECKPOINTS="${HOME}/user-default-efs/checkpoints"
+EFS_ROOT="${HOME}/user-default-efs"
+EFS_CHECKPOINTS="${EFS_ROOT}/checkpoints"
 PRITHVI_ROOT="${EFS_CHECKPOINTS}/prithvi"
 DATA_DIR="${PRITHVI_ROOT}/data"
 WEIGHTS_DIR="${DATA_DIR}/weights"
+
+if [ ! -d "${EFS_ROOT}" ]; then
+    echo "ERROR: EFS not mounted at ${EFS_ROOT}" >&2
+    exit 1
+fi
 
 VENV_DIR="${TRACK_DIR}/.venv"
 REQUIREMENTS_FILE="${SCRIPT_DIR}/requirements/requirements.txt"
@@ -25,7 +31,9 @@ KERNEL_DISPLAY_NAME="Python (Weather FM)"
 PRITHVI_WXC_REPO="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M"
 PRITHVI_WXC_ROLLOUT_REPO="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M-rollout"
 
-CHECKPOINTS_S3="s3://enw-04241552-kx1nks-shared/data/checkpoints/"
+BUCKET_NAME="s3://enw-04241552-kx1nks-shared"
+
+CHECKPOINTS_S3="${BUCKET_NAME}/data/checkpoints/"
 
 export UV_YES=1
 
@@ -69,6 +77,9 @@ mkdir -p "${DATA_DIR}/merra-2" "${DATA_DIR}/climatology" "${WEIGHTS_DIR}"
 mkdir -p "${EFS_CHECKPOINTS}"
 aws s3 sync --size-only "${CHECKPOINTS_S3}" "${EFS_CHECKPOINTS}/"
 ln -sfn "${EFS_CHECKPOINTS}" "${TRACK_DIR}/checkpoints"
+
+aws s3 sync --size-only "${BUCKET_NAME}/data/stats" "${EFS_CHECKPOINTS}/"
+ln -sfn "${EFS_CHECKPOINTS}" "${TRACK_DIR}/stats"
 
 echo
 echo "Setup complete."
