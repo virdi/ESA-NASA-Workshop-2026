@@ -37,7 +37,7 @@ if [ ! -d "${SCRIPT_DIR}/${REPO_DIR}" ]; then
     git clone "${REPO_URL}" "${SCRIPT_DIR}/${REPO_DIR}"
 fi
 
-uv venv --python 3.11 --allow-existing "${SCRIPT_DIR}/${FM_VENV_DIR}"
+uv venv --python 3.12 --allow-existing "${SCRIPT_DIR}/${FM_VENV_DIR}"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/${FM_VENV_DIR}/bin/activate"
 uv pip install -r "${SCRIPT_DIR}/${REPO_DIR}/requirements.txt"
