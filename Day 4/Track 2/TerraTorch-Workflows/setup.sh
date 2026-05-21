@@ -40,18 +40,11 @@ source "${SCRIPT_DIR}/${VENV_DIR}/bin/activate"
 
 uv pip install -r "${SCRIPT_DIR}/requirements.txt" ipykernel
 
-mkdir -p "${EFS_DATA}"
+python -m ipykernel install --user \
+    --name "${KERNEL_NAME}" \
+    --display-name "${KERNEL_DISPLAY_NAME}"
 
-# ~15 GB forest-disturbance bundle (notebook 03). Skip if already unzipped.
-if [ ! -d "${EFS_BUNDLE}" ]; then
-    aws s3 cp "${DATA_S3}" "${EFS_DATA}/workshop_bundle.zip"
-    unzip -q "${EFS_DATA}/workshop_bundle.zip" -d "${EFS_DATA}"
-    rm -f "${EFS_DATA}/workshop_bundle.zip"
-fi
-# Notebook 03 reads ../data and ../audit (auto-derived as siblings); point
-# those at the bundle's subdirs so no SageMaker-vs-local branching is needed.
-ln -sfn "${EFS_BUNDLE}/data" "${DATA_LINK}"
-ln -sfn "${EFS_BUNDLE}/audit" "${AUDIT_LINK}"
+mkdir -p "${EFS_DATA}"
 
 # HLS Burn Scars dataset (notebooks 01, 02, 04). Skip if already extracted.
 if [ ! -d "${EFS_BURNSCARS}" ]; then
@@ -72,6 +65,15 @@ if [ ! -d "${EFS_BURNSCARS}/embeddings_terramind" ]; then
     rm -f "${zip}"
 fi
 
-python -m ipykernel install --user \
-    --name "${KERNEL_NAME}" \
-    --display-name "${KERNEL_DISPLAY_NAME}"
+# ~15 GB forest-disturbance bundle (notebook 03). Skip if already unzipped.
+if [ ! -d "${EFS_BUNDLE}" ]; then
+    aws s3 cp "${DATA_S3}" "${EFS_DATA}/workshop_bundle.zip"
+    echo "Extracting workshop_bundle.zip onto EFS (~30 GB, expect 5-15 min)..."
+    time unzip -q "${EFS_DATA}/workshop_bundle.zip" -d "${EFS_DATA}"
+    echo "Extraction complete."
+    rm -f "${EFS_DATA}/workshop_bundle.zip"
+fi
+# Notebook 03 reads ../data and ../audit (auto-derived as siblings); point
+# those at the bundle's subdirs so no SageMaker-vs-local branching is needed.
+ln -sfn "${EFS_BUNDLE}/data" "${DATA_LINK}"
+ln -sfn "${EFS_BUNDLE}/audit" "${AUDIT_LINK}"
