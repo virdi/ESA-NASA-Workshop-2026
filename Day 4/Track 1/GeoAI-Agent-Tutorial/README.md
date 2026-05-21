@@ -1,6 +1,11 @@
 # GeoAI Agent Tutorial
 
-Workshop notebook.
+A two-part workshop notebook that walks through (1) **designing** an agent interactively via the **CARE** process and (2) **wiring up** a pre-built agent artifact (Prithvi-EO-2.0) into a runnable agent using `pydantic-ai` + `pydantic-ai-backends`.
+
+## What's in it
+
+- **Agent Design (CARE)** — chat with an interviewer agent that walks an SME through the four CARE phases (Scope & Decompose → Key Info → Reasoning & Guardrails → Prompt Architecture) and authors the resulting artifact files (`scope.md`, `contexts/*.md`, `tools/...`, `agents.md`, …) directly into a workspace directory. Lifted from [github.com/NASA-IMPACT/akd-labs](https://github.com/NASA-IMPACT/akd-labs); the per-phase prompt library comes from [github.com/NASA-IMPACT/AKD-CARE](https://github.com/NASA-IMPACT/AKD-CARE) and is auto-cloned on first run.
+- **FM Agent (Prithvi)** — wires the pre-built Prithvi artifact into a runnable agent with a `LocalBackend` in read-only mode; the runtime tools (`geocode_location`, `check_hls_availability`, `run_prithvi_inference`, plus auxiliary dataset signals) live in `tools/` and are exposed both to the in-notebook agent and to external MCP clients via `mcp_server.py`. Demonstrates async runs, full-trace streaming (tool calls + reasoning + text deltas), and an inline Gradio chat.
 
 ## Setup
 
@@ -9,6 +14,15 @@ Install [uv](https://docs.astral.sh/uv/) if you don't have it, then from this di
 ```bash
 uv sync
 ```
+
+> **Note:** A transitive dependency (`crawl4ai → unclecode-litellm`) installs into the same `litellm/` directory as the official package and can leave it in an inconsistent state. If notebook Section 5 fails with `ImportError: cannot import name 'ChatCompletionReasoningItem' from 'litellm.types.llms.openai'`, run:
+>
+> ```bash
+> uv pip uninstall unclecode-litellm
+> uv pip install --force-reinstall --no-deps litellm==1.83.0
+> ```
+>
+> `setup.sh` does this automatically on SageMaker.
 
 Create a `.env` file alongside the notebook with your OpenAI key (a `.env.example` is provided as a template):
 
@@ -24,7 +38,7 @@ The notebook calls `load_dotenv()` at the top, so the key is picked up automatic
 uv run --with jupyterlab jupyter lab
 ```
 
-Open `geoai_agent_tutorial.ipynb` and run the cells top to bottom.
+Open `geoai_agent_tutorial.ipynb` and run the cells top to bottom. The first time you reach the CARE section, the notebook will `git clone` the AKD-CARE phase-prompts repo into `./AKD-CARE/` (gitignored). The CARE interviewer authors its workspace into `./artifacts/care_workspace/` (also gitignored).
 
 ## Local MCP server
 
@@ -94,5 +108,7 @@ etc. directly in a conversation.
 
 - `geoai_agent_tutorial.ipynb` — the workshop notebook.
 - `mcp_server.py` — local MCP server for all tutorial tools.
-- `artifacts/Prithvi_WOrkshop_Agent_artifact/` — the agent artifact (scope, contexts, tools, guardrails, reasoning, output, and the assembled `agents.md` entry point).
+- `artifacts/Prithvi_WOrkshop_Agent_artifact/` — the pre-built Prithvi agent artifact (scope, contexts, tools, guardrails, reasoning, output, and the assembled `agents.md` entry point).
+- `artifacts/care_workspace/` — *(gitignored)* where the CARE interviewer writes the artifact it authors during the session.
+- `AKD-CARE/` — *(gitignored)* the auto-cloned phase-prompts library used by the CARE interviewer's `read_prompt` tool.
 - `pyproject.toml` / `uv.lock` — project dependencies pinned for reproducibility.

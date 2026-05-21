@@ -37,7 +37,7 @@ if [ ! -d "${SCRIPT_DIR}/${REPO_DIR}" ]; then
     git clone "${REPO_URL}" "${SCRIPT_DIR}/${REPO_DIR}"
 fi
 
-uv venv --python 3.11 --allow-existing "${SCRIPT_DIR}/${FM_VENV_DIR}"
+uv venv --python 3.12 --allow-existing "${SCRIPT_DIR}/${FM_VENV_DIR}"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/${FM_VENV_DIR}/bin/activate"
 uv pip install -r "${SCRIPT_DIR}/${REPO_DIR}/requirements.txt"
@@ -75,6 +75,17 @@ deactivate
 cd "${SCRIPT_DIR}"
 
 uv sync --frozen
+
+# akd → crawl4ai pulls in `unclecode-litellm`, a soft-fork of litellm that
+# installs into the same `litellm/` directory as the official package. On some
+# installs (notably SageMaker) the two overwrite each other file-by-file,
+# producing a Frankenstein litellm where `litellm/types/utils.py` (from 1.83.0)
+# imports symbols that `litellm/types/llms/openai.py` (from the older fork)
+# doesn't define — e.g. `ChatCompletionReasoningItem`. Nothing in this tutorial
+# actually uses crawl4ai, so we drop the fork and re-extract the official
+# litellm to leave the install internally consistent.
+uv pip uninstall unclecode-litellm
+uv pip install --force-reinstall --no-deps litellm==1.83.0
 
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/${TUTORIAL_VENV_DIR}/bin/activate"
