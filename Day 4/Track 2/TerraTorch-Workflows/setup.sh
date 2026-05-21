@@ -50,7 +50,7 @@ mkdir -p "${EFS_DATA}"
 if [ ! -d "${EFS_BURNSCARS}" ]; then
     archive="${EFS_DATA}/hls_burn_scars.tar.gz"
     gdown "https://drive.google.com/uc?id=${BURNSCARS_GDRIVE_ID}" -O "${archive}"
-    tar -xzf "${archive}" -C "${EFS_DATA}"
+    tar -xzkf "${archive}" -C "${EFS_DATA}"
     rm -f "${archive}"
 fi
 mkdir -p "${SCRIPT_DIR}/01_TerraTorch_Embeddings" "${SCRIPT_DIR}/04_Iterate_HPO_NAS"
@@ -61,17 +61,18 @@ ln -sfn "${EFS_BURNSCARS}" "${ITERATE_LINK}"
 if [ ! -d "${EFS_BURNSCARS}/embeddings_terramind" ]; then
     zip="${EFS_DATA}/hls_burn_scars_embeddings_terramind.zip"
     gdown "https://drive.google.com/uc?id=${EMBEDDINGS_GDRIVE_ID}" -O "${zip}"
-    unzip -q "${zip}" -d "${EFS_BURNSCARS}"
+    unzip -nq "${zip}" -d "${EFS_BURNSCARS}"
     rm -f "${zip}"
 fi
 
 # ~15 GB forest-disturbance bundle (notebook 03). Skip if already unzipped.
 if [ ! -d "${EFS_BUNDLE}" ]; then
-    aws s3 cp "${DATA_S3}" "${EFS_DATA}/workshop_bundle.zip"
+    bundle="${EFS_DATA}/workshop_bundle.zip"
+    aws s3 cp "${DATA_S3}" "${bundle}"
     echo "Extracting workshop_bundle.zip onto EFS (~30 GB, expect 5-15 min)..."
-    time unzip -q "${EFS_DATA}/workshop_bundle.zip" -d "${EFS_DATA}"
+    time unzip -nq "${bundle}" -d "${EFS_DATA}"
     echo "Extraction complete."
-    rm -f "${EFS_DATA}/workshop_bundle.zip"
+    rm -f "${bundle}"
 fi
 # Notebook 03 reads ../data and ../audit (auto-derived as siblings); point
 # those at the bundle's subdirs so no SageMaker-vs-local branching is needed.
