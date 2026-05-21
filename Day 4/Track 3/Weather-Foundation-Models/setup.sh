@@ -62,32 +62,6 @@ python -m ipykernel install \
 #    rollout config.yaml references.
 mkdir -p "${DATA_DIR}/merra-2" "${DATA_DIR}/climatology" "${WEIGHTS_DIR}"
 
-hf download "${PRITHVI_WXC_REPO}" \
-    --include "merra-2/MERRA2_sfc_2020010[1-6].nc" \
-    --local-dir "${DATA_DIR}"
-hf download "${PRITHVI_WXC_REPO}" \
-    --include "merra-2/MERRA_pres_2020010[1-6].nc" \
-    --local-dir "${DATA_DIR}"
-
-hf download "${PRITHVI_WXC_REPO}" \
-    --include "climatology/climate_surface_doy00[1-6]*.nc" \
-    --local-dir "${DATA_DIR}"
-hf download "${PRITHVI_WXC_REPO}" \
-    --include "climatology/climate_vertical_doy00[1-6]*.nc" \
-    --local-dir "${DATA_DIR}"
-
-hf download "${PRITHVI_WXC_REPO}" \
-    climatology/musigma_surface.nc \
-    climatology/musigma_vertical.nc \
-    climatology/anomaly_variance_surface.nc \
-    climatology/anomaly_variance_vertical.nc \
-    --local-dir "${DATA_DIR}"
-
-hf download "${PRITHVI_WXC_ROLLOUT_REPO}" config.yaml --local-dir "${DATA_DIR}"
-hf download "${PRITHVI_WXC_ROLLOUT_REPO}" \
-    prithvi.wxc.rollout.2300m.v1.bf16.pt \
-    --local-dir "${WEIGHTS_DIR}"
-
 # 6. Pull workshop checkpoints from S3 (GraphCast + AIFS) into the EFS path
 #    the GraphCast notebook reads from. The FMAifs notebook reads
 #    ../checkpoints/aifs_single_v0.2.1.ckpt relative to its own directory,
