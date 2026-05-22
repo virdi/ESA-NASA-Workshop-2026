@@ -1,0 +1,15 @@
+[2026-05-22 16:14:17 +0000] [14789] [INFO] Starting gunicorn 23.0.0
+[2026-05-22 16:14:17 +0000] [14789] [INFO] Listening at: http://0.0.0.0:8080 (14789)
+[2026-05-22 16:14:17 +0000] [14789] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-05-22 16:14:17 +0000] [14810] [INFO] Booting worker with pid: 14810
+/home/sagemaker-user/ESA-NASA-Workshop-2026/Day 4/Track 1/GeoAI-Agent-Tutorial/.venv-fm-inference/lib/python3.12/site-packages/pretrainedmodels/models/dpn.py:255: SyntaxWarning: "is" with 'str' literal. Did you mean "=="?
+  if block_type is 'proj':
+/home/sagemaker-user/ESA-NASA-Workshop-2026/Day 4/Track 1/GeoAI-Agent-Tutorial/.venv-fm-inference/lib/python3.12/site-packages/pretrainedmodels/models/dpn.py:258: SyntaxWarning: "is" with 'str' literal. Did you mean "=="?
+  elif block_type is 'down':
+/home/sagemaker-user/ESA-NASA-Workshop-2026/Day 4/Track 1/GeoAI-Agent-Tutorial/.venv-fm-inference/lib/python3.12/site-packages/pretrainedmodels/models/dpn.py:262: SyntaxWarning: "is" with 'str' literal. Did you mean "=="?
+  assert block_type is 'normal'
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:root:Decoder UNetDecoder does not have an `includes_head` attribute. Falling back to the value of the registry.
+[2026-05-22 16:15:56 +0000] [14810] [INFO] Started server process [14810]
+[2026-05-22 16:15:56 +0000] [14810] [INFO] Waiting for application startup.
+[2026-05-22 16:15:56 +0000] [14810] [INFO] Application startup complete.
