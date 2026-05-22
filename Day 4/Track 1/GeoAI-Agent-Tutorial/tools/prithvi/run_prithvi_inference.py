@@ -5,7 +5,7 @@ import requests
 from akd._base import InputSchema, OutputSchema
 from akd.tools import BaseTool
 from akd_ext.mcp import mcp_tool
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, BaseModel
 
 PRITHVI_SERVER_URL = os.environ.get("PRITHVI_SERVER_URL", "http://localhost:8080")
 MODEL_SERVER_TIMEOUT = int(os.environ.get("MODEL_SERVER_TIMEOUT", "300"))
@@ -24,6 +24,9 @@ class RunPrithviInferenceInput(InputSchema):
         description="List of 3 YYYY-MM-DD strings with >=70-day gaps (crop only)",
     )
 
+class TaskResult(BaseModel):
+    cog_s3_link: str
+    geojson_s3_link: str
 
 class RunPrithviInferenceOutput(OutputSchema):
     """Prithvi-EO inference result.
@@ -35,6 +38,9 @@ class RunPrithviInferenceOutput(OutputSchema):
     model_config = ConfigDict(extra="allow")
     status: str = Field(default="")
     message: str = Field(default="")
+    flood: TaskResult | None = None
+    burn: TaskResult | None = None
+    crop: TaskResult | None = None
 
 
 def _run_prithvi_inference(
