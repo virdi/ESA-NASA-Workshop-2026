@@ -18,8 +18,8 @@ EFS_BUNDLE="${EFS_DATA}/workshop_bundle"
 DATA_LINK="${SCRIPT_DIR}/data"
 AUDIT_LINK="${SCRIPT_DIR}/audit"
 
-BURNSCARS_GDRIVE_ID="1yFDNlGqGPxkc9lh9l1O70TuejXAQYYtC"
-EMBEDDINGS_GDRIVE_ID="1SA-WVWVC0d-s5BRKrup54lp7oFmjbSkR"
+BURNSCARS_S3="s3://enw-04241552-kx1nks-shared/day4/hls_burn_scars.tar.gz"
+EMBEDDINGS_S3="s3://enw-04241552-kx1nks-shared/day4/hls_burn_scars_embeddings_terramind.zip"
 EFS_BURNSCARS="${EFS_DATA}/hls_burn_scars"
 BURNSCARS_LINK="${SCRIPT_DIR}/01_TerraTorch_Embeddings/hls_burn_scars"
 ITERATE_LINK="${SCRIPT_DIR}/04_Iterate_HPO_NAS/hls_burn_scars"
@@ -49,7 +49,7 @@ mkdir -p "${EFS_DATA}"
 # HLS Burn Scars dataset (notebooks 01, 02, 04). Skip if already extracted.
 if [ ! -d "${EFS_BURNSCARS}" ]; then
     archive="${EFS_DATA}/hls_burn_scars.tar.gz"
-    gdown "https://drive.google.com/uc?id=${BURNSCARS_GDRIVE_ID}" -O "${archive}"
+    aws s3 cp "${BURNSCARS_S3}" "${archive}"
     tar -xzkf "${archive}" -C "${EFS_DATA}"
     rm -f "${archive}"
 fi
@@ -57,11 +57,13 @@ mkdir -p "${SCRIPT_DIR}/01_TerraTorch_Embeddings" "${SCRIPT_DIR}/04_Iterate_HPO_
 ln -sfn "${EFS_BURNSCARS}" "${BURNSCARS_LINK}"
 ln -sfn "${EFS_BURNSCARS}" "${ITERATE_LINK}"
 
-# Precomputed TerraMind embeddings (notebook 04). Skip if already extracted.
+# Precomputed TerraMind embeddings (notebook 04). The zip has a top-level
+# hls_burn_scars/ wrapper, so extract into EFS_DATA so it merges with the
+# existing hls_burn_scars/ instead of nesting.
 if [ ! -d "${EFS_BURNSCARS}/embeddings_terramind" ]; then
     zip="${EFS_DATA}/hls_burn_scars_embeddings_terramind.zip"
-    gdown "https://drive.google.com/uc?id=${EMBEDDINGS_GDRIVE_ID}" -O "${zip}"
-    unzip -nq "${zip}" -d "${EFS_BURNSCARS}"
+    aws s3 cp "${EMBEDDINGS_S3}" "${zip}"
+    unzip -nq "${zip}" -d "${EFS_DATA}"
     rm -f "${zip}"
 fi
 
